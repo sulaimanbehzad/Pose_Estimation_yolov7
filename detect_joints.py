@@ -60,6 +60,12 @@ def visualize_output(output, image):
     plt.axis('off')
     plt.imshow(nimg)
     plt.show()
-imgs_path = 'images/IM_R_4.jpg'
+
+def multiple_camera_keypoint():
+    left_imgs_path = ''
+    right_imgs_path = ''
+
+
+imgs_path = 'images/IM_L_11.jpg'
 output, image = run_inference(imgs_path) # Bryan Reyes on Unsplash
 visualize_output(output, image)
