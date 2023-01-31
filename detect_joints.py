@@ -10,13 +10,15 @@ import cv2
 import numpy as np
 import tkinter
 import matplotlib
+import os
+from Calibrate_Multiple_Cameras import SortImageNames
 
 matplotlib.use('TkAgg')
 
 print(torch.version)
 
 def load_model():
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = torch.load('yolov7-w6-pose.pt', map_location=device)['model']
     # Put in inference mode
     model.float().eval()
@@ -61,11 +63,27 @@ def visualize_output(output, image):
     plt.imshow(nimg)
     plt.show()
 
-def multiple_camera_keypoint():
-    left_imgs_path = ''
-    right_imgs_path = ''
+def multiple_pics_inference(path):
+    output = []
+    image = []
+    print('Before: {}, {}, {}, ...'.format(os.listdir(path)[0], os.listdir(path)[1], os.listdir(path)[2]))
+    sorted_path = SortImageNames(path)
+    print('After: {}, {}, {}, ...'.format(os.path.basename(path[0]), os.path.basename(path[1]), os.path.basename(path[2])))
+    for p in sorted_path:
+        print(f'{p}')
+        out, im = run_inference(p)
+        output.append(out)
+        image.append(im)
+    return output, image
 
 
-imgs_path = 'images/IM_L_11.jpg'
-output, image = run_inference(imgs_path) # Bryan Reyes on Unsplash
-visualize_output(output, image)
+left_imgs_path = 'data/pose_imgs/LeftCamera'
+right_imgs_path = 'data/pose_imgs/RightCamera'
+print('We have {} Images from the left camera'.format(len(os.listdir(left_imgs_path))))
+print('and {} Images from the right camera.'.format(len(os.listdir(right_imgs_path))))
+# left_output, left_image = multiple_pics_inference(left_imgs_path)
+# right_output, right_image = multiple_pics_inference(right_imgs_path)
+print(f'GPU: {torch.cuda.is_available()}')
+# imgs_path = 'images/IM_L_11.jpg'
+# output, image = run_inference(imgs_path) # Bryan Reyes on Unsplash
+# visualize_output(output, image)
