@@ -10,6 +10,8 @@ import cv2
 import numpy as np
 import tkinter
 import matplotlib
+import os
+from Calibrate_Multiple_Cameras import SortImageNames
 
 matplotlib.use('TkAgg')
 
@@ -62,10 +64,18 @@ def visualize_output(output, image):
     plt.show()
 
 def multiple_camera_keypoint():
-    left_imgs_path = ''
-    right_imgs_path = ''
+    left_imgs_path = 'data/pose_imgs/LeftCamera'
+    right_imgs_path = 'data/pose_imgs/RightCamera'
+    print('We have {} Images from the left camera'.format(len(os.listdir(left_imgs_path))))
+    print('and {} Images from the right camera.'.format(len(os.listdir(right_imgs_path))))
 
-
-imgs_path = 'images/IM_L_11.jpg'
-output, image = run_inference(imgs_path) # Bryan Reyes on Unsplash
-visualize_output(output, image)
+    print('Before: {}, {}, {}, ...'.format(os.listdir(left_imgs_path)[0], os.listdir(left_imgs_path)[1], os.listdir(left_imgs_path)[2]))
+    left_imgs = SortImageNames(left_imgs_path)
+    right_imgs = SortImageNames(right_imgs_path)
+    print('After: {}, {}, {}, ...'.format(os.path.basename(left_imgs[0]), os.path.basename(left_imgs[1]), os.path.basename(left_imgs[2])))
+    print(f'{len(left_imgs)} \n{len(right_imgs)}')
+    
+multiple_camera_keypoint()
+# imgs_path = 'images/IM_L_11.jpg'
+# output, image = run_inference(imgs_path) # Bryan Reyes on Unsplash
+# visualize_output(output, image)
