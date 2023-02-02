@@ -2,6 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cv2 as cv
 
+IM_HEIGHT = 576
+IM_WIDTH = 1024
+
 file = 'data/out/parameters.npz'
 # in the dataset I have stored an example parameters file
 param_path = 'data/out/parameters.npz'
@@ -10,41 +13,33 @@ param_path = 'data/out/parameters.npz'
 params = dict(np.load(param_path))
 print(params.keys())
 
-left_camera_points = [[127, 83],
-                      [164, 85],
-                      [119, 122],
-                      [157, 122],
+left_camera_points = [
+    [335, 259],    [366, 281],  [389, 352], [439, 288],
+    # [591, 421],
+    #                   [520, 337],
+    #                   [465, 298],
+    #                   [553, 439]
+]
 
-                    [127, 83],
-                      [164, 85],
-                      [119, 122],
-                      [157, 122],
+right_camera_points = [
+    # [163, 375],
+    #                    [189, 387],
+    #                    [242, 294],
+    #                    [289, 258],
 
-                      [555, 381],
-                      [594, 376],
-                      [592, 419],
-                      [553, 419]]
-
-right_camera_points = [[334, 62],
-                       [372, 62],
-                       [372, 104],
-                       [332, 102],
-
-[334, 62],
-                       [372, 62],
-                       [372, 104],
-                       [332, 102],
-
-                       [772, 394],
-                       [810, 392],
-                       [809, 359],
-                       [768, 355]]
+[312, 255],
+                       [330, 216],
+                       [287, 268],
+                       [251, 251]
+                       ]
 
 left_camera_points = np.array(left_camera_points)
 right_camera_points = np.array(right_camera_points)
 
-frame1 = cv.imread('data/pose_imgs/LeftCamera/Im_L_1.jpg')
-frame2 = cv.imread('data/pose_imgs/RightCamera/Im_R_1.jpg')
+frame1 = cv.imread('data/pose_imgs/Pose3/LeftCamera/Im_L_5.jpg')
+frame1 = cv.resize(frame1, (IM_WIDTH, IM_HEIGHT))
+frame2 = cv.imread('data/pose_imgs/Pose3/RightCamera/Im_R_5.jpg')
+frame2 = cv.resize(frame2, (IM_WIDTH, IM_HEIGHT))
 
 plt.imshow(frame1[:, :, [2, 1, 0]])
 plt.scatter(left_camera_points[:, 0], left_camera_points[:, 1])
@@ -74,15 +69,15 @@ def DLT(P1, P2, point1, point2):
          P2[0, :] - point2[0] * P2[2, :]
          ]
     A = np.array(A).reshape((4, 4))
-    print('A: ')
-    print(A)
+    # print('A: ')
+    # print(A)
 
     B = A.transpose() @ A
     from scipy import linalg
     U, s, Vh = linalg.svd(B, full_matrices=False)
 
-    print('Triangulated point: ')
-    print(Vh[3, 0:3] / Vh[3, 3])
+    # print('Triangulated point: ')
+    # print(Vh[3, 0:3] / Vh[3, 3])
     return Vh[3, 0:3] / Vh[3, 3]
 
 
@@ -93,6 +88,9 @@ for lcp, rcp in zip(left_camera_points, right_camera_points):
     p3ds.append(_p3d)
 p3ds = np.array(p3ds)
 
+for p in p3ds:
+    print(p)
+
 from mpl_toolkits.mplot3d import Axes3D
 
 min_thresh = np.min(p3ds)
@@ -102,15 +100,15 @@ ax = fig.add_subplot(111, projection='3d')
 ax.set_xlim3d(min_thresh, max_thresh)
 ax.set_ylim3d(min_thresh, max_thresh)
 ax.set_zlim3d(min_thresh, max_thresh)
-
-connections = [[0, 1], [1, 2], [2, 3], [3, 4], [1, 5], [5, 6], [6, 7], [1, 8], [1, 9], [2, 8], [5, 9], [8, 9], [0, 10],
-               [0, 11]]
-for _c in connections:
-    print(p3ds[_c[0]])
-    print(p3ds[_c[1]])
-    ax.plot(xs=[p3ds[_c[0], 0], p3ds[_c[1], 0]], ys=[p3ds[_c[0], 1], p3ds[_c[1], 1]],
-            zs=[p3ds[_c[0], 2], p3ds[_c[1], 2]], c='red')
-
+for p in p3ds:
+    ax.scatter(xs=p[0], ys=p[1], zs=p[2], c='red')
+#             zs=[p3ds[_c[0], 2], p3ds[_c[1], 2]], c='red'))
+# connections = [[0, 1], [1, 2], [2, 3], [3, 4], [1, 5], [5, 6], [6, 7], [1, 8], [1, 9], [2, 8], [5, 9], [8, 9], [0, 10]]
+# for _c in connections:
+#     print(p3ds[_c[0]])
+#     print(p3ds[_c[1]])
+#     ax.plot(xs=[p3ds[_c[0], 0], p3ds[_c[1], 0]], ys=[p3ds[_c[0], 1], p3ds[_c[1], 1]],
+#             zs=[p3ds[_c[0], 2], p3ds[_c[1], 2]], c='red')
 plt.show()
 
 
