@@ -89,11 +89,6 @@ def GenerateImagepoints(paths):
     return imgpoints
 
 
-Left_imgpoints = GenerateImagepoints(Left_Paths)
-Right_imgpoints = GenerateImagepoints(Right_Paths)
-print(f'Detected left: {len(Left_imgpoints)}')
-print(f'Detected right: {len(Left_imgpoints)}')
-
 
 # we also can display the imagepoints on the example pictures.
 
@@ -105,14 +100,7 @@ def DisplayImagePoints(path, imgpoints):
     return img
 
 
-example_image_left = DisplayImagePoints(Left_Paths[0], Left_imgpoints[0])
-example_image_right = DisplayImagePoints(Right_Paths[0], Right_imgpoints[0])
-fig = plt.figure(figsize=(20, 20))
-grid = ImageGrid(fig, 111, nrows_ncols=(1, 2), axes_pad=0.1)
 
-for ax, im in zip(grid, [example_image_left, example_image_right]):
-    ax.imshow(im)
-    ax.axis('off')
 # cv2.imshow('im', example_image_left)
 # cv2.waitKey(10000)
 
@@ -134,22 +122,6 @@ def PlotLocalCoordinates(img, points):
     return img
 
 
-n = 0
-img = cv2.imread(Left_Paths[n])
-img = cv2.resize(img, (IM_WIDTH, IM_HEIGHT))
-img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-# cv2.imshow('ex', img)
-img = PlotLocalCoordinates(img, Left_imgpoints[n])
-
-fig = plt.figure(figsize=(10, 10))
-plt.imshow(img)
-plt.axis('off')
-plt.show(block=False)
-plt.pause(3)
-plt.close()
-
-# Camera Calibration
-Start_Time_Cal = time.perf_counter()
 
 
 def CalibrateCamera(paths, imgpoints, objpoints):
@@ -194,16 +166,7 @@ def CalibrateCamera(paths, imgpoints, objpoints):
     return CameraParams
 
 
-Left_Params = CalibrateCamera(Left_Paths, Left_imgpoints, objpoints)
-Right_Params = CalibrateCamera(Right_Paths, Right_imgpoints, objpoints)
 
-np.set_printoptions(suppress=True, precision=5)
-print('Intrinsic Matrix:')
-print(Left_Params['Intrinsic'])
-print('\nDistortion Parameters:')
-print(Left_Params['Distortion'])
-print('\nExtrinsic Matrix from 1.Image:')
-print(Left_Params['Extrinsics'][0])
 
 
 def CalculateErrors(params, imgpoints, objpoints):
@@ -240,19 +203,7 @@ def CalculateErrors(params, imgpoints, objpoints):
     return rmsePerView, rmseAll
 
 
-Left_Errors, Left_MeanError = CalculateErrors(Left_Params, Left_imgpoints, objpoints)
-Right_Errors, Right_MeanError = CalculateErrors(Right_Params, Right_imgpoints, objpoints)
 
-print('Reprojection Error Left:  {:.4f}'.format(Left_MeanError))
-print('Reprojection Error Right: {:.4f}'.format(Right_MeanError))
-
-Left_Params['Imgpoints'] = Left_imgpoints
-Left_Params['Errors'] = Left_Errors
-Left_Params['MeanError'] = Left_MeanError
-
-Right_Params['Imgpoints'] = Right_imgpoints
-Right_Params['Errors'] = Right_Errors
-Right_Params['MeanError'] = Right_MeanError
 
 
 def StereoCalibration(leftparams, rightparams, objpoints, imgpL, imgpR, Left_Paths, Right_Paths):
@@ -288,41 +239,106 @@ def StereoCalibration(leftparams, rightparams, objpoints, imgpL, imgpR, Left_Pat
     return StereoParams
 
 
-Stereo_Params = StereoCalibration(Left_Params, Right_Params, objpoints, Left_imgpoints, Right_imgpoints, Left_Paths,
-                                  Right_Paths)
+# stuff to run always here such as class/def
+def main():
+    pass
 
-print('Transformation Matrix:')
-print(Stereo_Params['Transformation'])
-print('\nEssential Matrix:')
-print(Stereo_Params['Essential'])
-print('\nFundamental Matrix:')
-print(Stereo_Params['Fundamental'])
-print('\nMean Reprojection Error:')
-print('{:.6f}'.format(Stereo_Params['MeanError']))
 
-end = time.perf_counter() - Start_Time_Cal
-print('elapsed time for calibration process: {:.2f} seconds.'.format(end))
+if __name__ == "__main__":
 
-Parameters = Stereo_Params
-Parameters['SquareSize'] = SQUARE_SIZE
-Parameters['BoardSize'] = BOARD_SIZE
-Parameters['Objpoints'] = objpoints
+    Left_imgpoints = GenerateImagepoints(Left_Paths)
+    Right_imgpoints = GenerateImagepoints(Right_Paths)
+    print(f'Detected left: {len(Left_imgpoints)}')
+    print(f'Detected right: {len(Left_imgpoints)}')
 
-for Lkey in Left_Params.keys():
-    name = 'L_' + str(Lkey)
-    Parameters[name] = Left_Params[Lkey]
+    example_image_left = DisplayImagePoints(Left_Paths[0], Left_imgpoints[0])
+    example_image_right = DisplayImagePoints(Right_Paths[0], Right_imgpoints[0])
+    fig = plt.figure(figsize=(20, 20))
+    grid = ImageGrid(fig, 111, nrows_ncols=(1, 2), axes_pad=0.1)
 
-for Rkey in Right_Params.keys():
-    name = 'R_' + str(Rkey)
-    Parameters[name] = Right_Params[Rkey]
+    for ax, im in zip(grid, [example_image_left, example_image_right]):
+        ax.imshow(im)
+        ax.axis('off')
 
-# save the Parameters dictionary into an npz file
-# with this file we can access the data afterwards very easy
+    n = 0
+    img = cv2.imread(Left_Paths[n])
+    img = cv2.resize(img, (IM_WIDTH, IM_HEIGHT))
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    # cv2.imshow('ex', img)
+    img = PlotLocalCoordinates(img, Left_imgpoints[n])
 
-file = 'data/out/parameters.npz'
-np.savez(file, **Parameters)
-npz = dict(np.load(file))
-size = (npz['L_Imgpoints'].shape[0], npz['L_Imgpoints'].shape[1], npz['L_Imgpoints'].shape[3])
-npz['L_Imgpoints'] = np.resize(npz.pop('L_Imgpoints'), size)
-npz['R_Imgpoints'] = np.resize(npz.pop('R_Imgpoints'), size)
-np.savez(file, **npz)
+    fig = plt.figure(figsize=(10, 10))
+    plt.imshow(img)
+    plt.axis('off')
+    plt.show(block=False)
+    plt.pause(3)
+    plt.close()
+
+    # Camera Calibration
+    Start_Time_Cal = time.perf_counter()
+
+    Left_Params = CalibrateCamera(Left_Paths, Left_imgpoints, objpoints)
+    Right_Params = CalibrateCamera(Right_Paths, Right_imgpoints, objpoints)
+
+    np.set_printoptions(suppress=True, precision=5)
+    print('Intrinsic Matrix:')
+    print(Left_Params['Intrinsic'])
+    print('\nDistortion Parameters:')
+    print(Left_Params['Distortion'])
+    print('\nExtrinsic Matrix from 1.Image:')
+    print(Left_Params['Extrinsics'][0])
+
+    # stuff only to run when not called via 'import' here
+    Left_Errors, Left_MeanError = CalculateErrors(Left_Params, Left_imgpoints, objpoints)
+    Right_Errors, Right_MeanError = CalculateErrors(Right_Params, Right_imgpoints, objpoints)
+
+    print('Reprojection Error Left:  {:.4f}'.format(Left_MeanError))
+    print('Reprojection Error Right: {:.4f}'.format(Right_MeanError))
+
+    Left_Params['Imgpoints'] = Left_imgpoints
+    Left_Params['Errors'] = Left_Errors
+    Left_Params['MeanError'] = Left_MeanError
+
+    Right_Params['Imgpoints'] = Right_imgpoints
+    Right_Params['Errors'] = Right_Errors
+    Right_Params['MeanError'] = Right_MeanError
+
+    Stereo_Params = StereoCalibration(Left_Params, Right_Params, objpoints, Left_imgpoints, Right_imgpoints, Left_Paths,
+                                      Right_Paths)
+
+    print('Transformation Matrix:')
+    print(Stereo_Params['Transformation'])
+    print('\nEssential Matrix:')
+    print(Stereo_Params['Essential'])
+    print('\nFundamental Matrix:')
+    print(Stereo_Params['Fundamental'])
+    print('\nMean Reprojection Error:')
+    print('{:.6f}'.format(Stereo_Params['MeanError']))
+
+    end = time.perf_counter() - Start_Time_Cal
+    print('elapsed time for calibration process: {:.2f} seconds.'.format(end))
+
+    Parameters = Stereo_Params
+    Parameters['SquareSize'] = SQUARE_SIZE
+    Parameters['BoardSize'] = BOARD_SIZE
+    Parameters['Objpoints'] = objpoints
+
+    for Lkey in Left_Params.keys():
+        name = 'L_' + str(Lkey)
+        Parameters[name] = Left_Params[Lkey]
+
+    for Rkey in Right_Params.keys():
+        name = 'R_' + str(Rkey)
+        Parameters[name] = Right_Params[Rkey]
+
+    # save the Parameters dictionary into an npz file
+    # with this file we can access the data afterwards very easy
+
+    file = 'data/out/parameters.npz'
+    np.savez(file, **Parameters)
+    npz = dict(np.load(file))
+    size = (npz['L_Imgpoints'].shape[0], npz['L_Imgpoints'].shape[1], npz['L_Imgpoints'].shape[3])
+    npz['L_Imgpoints'] = np.resize(npz.pop('L_Imgpoints'), size)
+    npz['R_Imgpoints'] = np.resize(npz.pop('R_Imgpoints'), size)
+    np.savez(file, **npz)
+    main()
