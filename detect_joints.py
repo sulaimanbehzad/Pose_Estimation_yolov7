@@ -1,3 +1,4 @@
+import pandas as pd
 import torch
 from torchvision import transforms
 
@@ -18,6 +19,9 @@ import gc
 matplotlib.use('TkAgg')
 
 print(torch.version)
+
+IM_HEIGHT = 576
+IM_WIDTH = 1024
 
 def free_gpu_cache():
     print("Initial GPU Usage")
@@ -99,13 +103,97 @@ def multiple_pics_inference(path):
         image.append(im)
     return output, image
 
+def visualize_multiple_pics(output, image):
+    for (out, im) in zip(output,image):
+        visualize_output(out,im)
 
-left_imgs_path = 'data/pose_imgs/LeftCamera'
-right_imgs_path = 'data/pose_imgs/RightCamera'
+
+def get_keypoints(output, image):
+    output = non_max_suppression_kpt(output,
+                                     0.25,  # Confidence Threshold
+                                     0.65,  # IoU Threshold
+                                     nc=model.yaml['nc'],  # Number of Classes
+                                     nkpt=model.yaml['nkpt'],  # Number of Keypoints
+                                     kpt_label=True)
+    # TODO: get keypoint label and save it in dataframe
+    with torch.no_grad():
+        output = output_to_keypoint(output)
+    print(output)
+    nimg = image[0].permute(1, 2, 0) * 255
+    nimg = nimg.cpu().numpy().astype(np.uint8)
+    nimg = cv2.cvtColor(nimg, cv2.COLOR_RGB2BGR)
+    for idx in range(output.shape[0]):
+        plot_kpts(nimg, output[idx, 7:].T, 3)
+    plt.figure(figsize=(12, 12))
+    plt.axis('off')
+    plt.imshow(nimg)
+    plt.show()
+
+
+def plot_kpts(im, kpts, steps, orig_shape=None):
+    num_kpts = len(kpts)//steps
+    radius = 5
+    for kid in range(num_kpts):
+        x_coord, y_coord = kpts[steps * kid], kpts[steps * kid + 1]
+        if not (x_coord % 640 == 0 or y_coord % 640 == 0):
+            if steps == 3:
+                conf = kpts[steps * kid + 2]
+                if conf < 0.5:
+                    continue
+            cv2.circle(im, (int(x_coord), int(y_coord)), radius, (255,0,0), -1)
+
+def save_kpts(imgs_path, out_path, orig_shape=None):
+    df = pd.DataFrame(columns=['image', 'kpt_x', 'kpt_y'])
+    # 'keypoint_label'
+    for img_p in imgs_path:
+        output, _ = run_inference(img_p)
+        output = non_max_suppression_kpt(output,
+                                         0.25,  # Confidence Threshold
+                                         0.65,  # IoU Threshold
+                                         nc=model.yaml['nc'],  # Number of Classes
+                                         nkpt=model.yaml['nkpt'],  # Number of Keypoints
+                                         kpt_label=True)
+        # TODO: get keypoint label and save it in dataframe
+        with torch.no_grad():
+            output = output_to_keypoint(output)
+        # print(f'output: {output}')
+        for idx in range(output.shape[0]):
+            kpts = output[idx, 7:].T
+            steps = 3
+            num_kpts = len(kpts)//steps
+            for kid in range(num_kpts):
+                x_coord, y_coord = kpts[steps * kid], kpts[steps * kid + 1]
+                if not (x_coord % 640 == 0 or y_coord % 640 == 0):
+                    if steps == 3:
+                        conf = kpts[steps * kid + 2]
+                        if conf < 0.5:
+                            continue
+                    # cv2.circle(im, (int(x_coord), int(y_coord)), radius, (255,0,0), -1)
+                    print(f'x: {x_coord} - y: {y_coord}')
+                    df2 = pd.DataFrame.from_records([{'image': img_p, 'kpt_x': int(x_coord), 'kpt_y': int(y_coord)}])
+                    print(f'{df2}')
+                    print(f'df before concat: {df}')
+                    df = pd.concat([df, df2])
+                    print(f'df after concat: {df}')
+    df.to_csv(out_path, mode='w+', index=False)
+
+left_imgs_path = 'data/pose_imgs/Pose4/leftcamera'
+right_imgs_path = 'data/pose_imgs/Pose4/rightcamera'
+output_left_keypoints = 'data/out/keypoint_left.csv'
+output_right_keypoints = 'data/out/keypoint_right.csv'
+
 print('We have {} Images from the left camera'.format(len(os.listdir(left_imgs_path))))
 print('and {} Images from the right camera.'.format(len(os.listdir(right_imgs_path))))
-left_output, left_image = multiple_pics_inference(left_imgs_path)
-right_output, right_image = multiple_pics_inference(right_imgs_path)
+print('Before: {}, {}, {}, ...'.format(os.listdir(left_imgs_path)[0], os.listdir(left_imgs_path)[1], os.listdir(left_imgs_path)[2]))
+left_sorted = SortImageNames(left_imgs_path)
+right_sorted = SortImageNames(right_imgs_path)
+print('After: {}, {}, {}, ...'.format(os.path.basename(left_sorted[0]), os.path.basename(left_sorted[1]), os.path.basename(left_sorted[2])))
+# left_output, left_image = multiple_pics_inference(left_imgs_path)
+# right_output, right_image = multiple_pics_inference(right_imgs_path)
+# visualize_multiple_pics(left_output,left_image)
+# get_keypoints(left_output[2], left_image[2])
+save_kpts(left_sorted, out_path=output_left_keypoints)
+save_kpts(right_sorted,out_path=output_right_keypoints)
 print(f'GPU: {torch.cuda.is_available()}')
 print(f'GPU: {torch.cuda.device_count()}')
 print(f'GPU: {torch.cuda.current_device()}')
