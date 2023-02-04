@@ -20,6 +20,9 @@ matplotlib.use('TkAgg')
 
 print(torch.version)
 
+IM_HEIGHT = 576
+IM_WIDTH = 1024
+
 def free_gpu_cache():
     print("Initial GPU Usage")
     gpu_usage()
@@ -174,8 +177,8 @@ def save_kpts(imgs_path, out_path, orig_shape=None):
                     print(f'df after concat: {df}')
     df.to_csv(out_path, mode='w+', index=False)
 
-left_imgs_path = 'data/pose_imgs/Pose3/leftcamera'
-right_imgs_path = 'data/pose_imgs/Pose3/rightcamera'
+left_imgs_path = 'data/pose_imgs/Pose4/leftcamera'
+right_imgs_path = 'data/pose_imgs/Pose4/rightcamera'
 output_left_keypoints = 'data/out/keypoint_left.csv'
 output_right_keypoints = 'data/out/keypoint_right.csv'
 
@@ -190,6 +193,7 @@ print('After: {}, {}, {}, ...'.format(os.path.basename(left_sorted[0]), os.path.
 # visualize_multiple_pics(left_output,left_image)
 # get_keypoints(left_output[2], left_image[2])
 save_kpts(left_sorted, out_path=output_left_keypoints)
+save_kpts(right_sorted,out_path=output_right_keypoints)
 print(f'GPU: {torch.cuda.is_available()}')
 print(f'GPU: {torch.cuda.device_count()}')
 print(f'GPU: {torch.cuda.current_device()}')
