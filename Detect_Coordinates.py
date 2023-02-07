@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cv2 as cv
 import pandas as pd
+from matplotlib.offsetbox import (TextArea, DrawingArea, OffsetImage,
+                                  AnnotationBbox)
 
 IM_HEIGHT = 576
 IM_WIDTH = 1024
@@ -14,6 +16,13 @@ param_path = 'data/out/parameters.npz'
 # you can import them to a dictionary and access the parameters
 params = dict(np.load(param_path))
 print(params.keys())
+labels2 = ['f1', 'f2', 'f3', 'f4', 'r_shoulder', 'f_shoulder', 'r_elbow', 'l_elbow'
+           'l_wrist', 'mid1', 'mid2', 'r_wrist', 'l_knee', 'r_knee', 'l_ankle', 'r_ankle']
+labels = list('ABCDEFGHIJKLMNOP')
+for l in labels:
+    print(l)
+
+c = np.random.randint(1,5,size=16)
 
 def plot_points(im_dir):
     df = pd.read_csv(im_dir)
@@ -21,17 +30,44 @@ def plot_points(im_dir):
     # print(imgs)
     xy_coord = []
     for im in imgs:
-        frame1 = cv.imread(im)
+        fig, ax = plt.subplots()
+        frame1 = plt.imread(im, format='jpg')
         frame1 = cv.resize(frame1, (IM_WIDTH, IM_HEIGHT))
+        imagebox = OffsetImage(frame1, zoom=0.2)
+        imagebox.image.axes = ax
         vals = df.loc[df['image'] == im]
         camera_points = vals[['kpt_x', 'kpt_y']].to_numpy()
         xy_coord.append(camera_points)
         plt.imshow(frame1[:, :, [2, 1, 0]])
-        plt.scatter(camera_points[:, 0], camera_points[:, 1])
+        sc = plt.scatter(camera_points[:, 0], camera_points[:, 1], c='r', s=4)
+        print(f'{camera_points[:,0]} ----------------- {camera_points[:, 1]}')
+        for txt,x_coord, y_coord in zip(labels2, camera_points[:, 0], camera_points[:, 1]):
+            ax.annotate(txt, (x_coord, y_coord), color='b')
         plt.show()  # left_camera_points = np.array(left_camera_points.va)
-        # print(f'LFP: {camera_points}')
     return xy_coord
+def update_annot(ind):
 
+    pos = sc.get_offsets()[ind["ind"][0]]
+    annot.xy = pos
+    text = "{}, {}".format(" ".join(list(map(str,ind["ind"]))),
+                           " ".join([names[n] for n in ind["ind"]]))
+    annot.set_text(text)
+    annot.get_bbox_patch().set_facecolor(cmap(norm(c[ind["ind"][0]])))
+    annot.get_bbox_patch().set_alpha(0.4)
+
+
+def hover(event):
+    vis = annot.get_visible()
+    if event.inaxes == ax:
+        cont, ind = sc.contains(event)
+        if cont:
+            update_annot(ind)
+            annot.set_visible(True)
+            fig.canvas.draw_idle()
+        else:
+            if vis:
+                annot.set_visible(False)
+                fig.canvas.draw_idle()
 def DLT(P1, P2, point1, point2):
     A = [point1[1] * P1[2, :] - P1[1, :],
          P1[0, :] - point1[0] * P1[2, :],
@@ -67,12 +103,16 @@ def plot_keypoints_3d(lkpts, rkpts, P1, P2):
         min_thresh = np.min(p3ds)
         max_thresh = np.max(p3ds)
         fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
+        ax = fig.add_subplot(projection='3d')
         ax.set_xlim3d(min_thresh, max_thresh)
         ax.set_ylim3d(min_thresh, max_thresh)
         ax.set_zlim3d(min_thresh, max_thresh)
+        prev_p = []
         for p in p3ds:
             ax.scatter(xs=p[0], ys=p[1], zs=p[2], c='red', s=3)
+            if len(prev_p) > 0:
+                ax.plot([prev_p[0], p[0]], [prev_p[1], p[1]], [prev_p[2], p[2]], color='black')
+            prev_p = p
 
 left_camera_points = plot_points(left_kpts)
 right_camera_points = plot_points(right_kpts)
