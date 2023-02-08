@@ -171,10 +171,10 @@ def save_kpts(imgs_path, out_path, orig_shape=None):
                     # cv2.circle(im, (int(x_coord), int(y_coord)), radius, (255,0,0), -1)
                     print(f'x: {x_coord} - y: {y_coord}')
                     df2 = pd.DataFrame.from_records([{'image': img_p, 'kpt_x': int(x_coord), 'kpt_y': int(y_coord)}])
-                    print(f'{df2}')
-                    print(f'df before concat: {df}')
+                    # print(f'{df2}')
+                    # print(f'df before concat: {df}')
                     df = pd.concat([df, df2])
-                    print(f'df after concat: {df}')
+                    # print(f'df after concat: {df}')
     df.to_csv(out_path, mode='w+', index=False)
 
 left_imgs_path = 'data/pose_imgs/Pose4/leftcamera'
