@@ -64,6 +64,9 @@ def plot_points(im_left, im_right, df_left, df_right, win):
     camera_points_left = vals_left[['kpt_x', 'kpt_y']].to_numpy()
     camera_points_right = vals_right[['kpt_x', 'kpt_y']].to_numpy()
 
+    left_xy_coord.append(camera_points_left)
+    right_xy_coord.append(camera_points_right)
+
     for cpl, cpr in zip(camera_points_left, camera_points_right):
         print(f'cpl: {cpl} - cpr: {cpr}')
         graph.draw_circle(center_location=(cpl[0]/2, cpl[1]/2), radius=5, fill_color='black', line_color='red')
@@ -115,9 +118,9 @@ def DLT(P1, P2, point1, point2):
 
 
 def plot_keypoints_3d(lkpts, rkpts, P1, P2):
+    print('plot 3d')
     for itr1, itr2 in zip(lkpts, rkpts):
         p3ds = []
-
         for lcp, rcp in zip(itr1, itr2):
             _p3d = DLT(P1, P2, lcp, rcp)
             p3ds.append(_p3d)
@@ -165,7 +168,6 @@ def plot_keypoints_3d(lkpts, rkpts, P1, P2):
 # plt.show()
 
 
-# plot_keypoints_3d(left_camera_points, right_camera_points, projection_matrix_1, projection_matrix_2)
 
 # p3ds = []
 #
@@ -195,54 +197,22 @@ def plot_keypoints_3d(lkpts, rkpts, P1, P2):
 #     print(p3ds[_c[1]])
 #     ax.plot(xs=[p3ds[_c[0], 0], p3ds[_c[1], 0]], ys=[p3ds[_c[0], 1], p3ds[_c[1], 1]],
 #             zs=[p3ds[_c[0], 2], p3ds[_c[1], 2]], c='red')
-plt.show()
-
-
-def Get3Dfrom2D(List2D, K, R, t, d=1.75):
-    # List2D : n x 2 array of pixel locations in an image
-    # K : Intrinsic matrix for camera
-    # R : Rotation matrix describing rotation of camera frame
-    #     w.r.t world frame.
-    # t : translation vector describing the translation of camera frame
-    #     w.r.t world frame
-    # [R t] combined is known as the Camera Pose.
-
-    List2D = np.array(List2D)
-    List3D = []
-    # t.shape = (3,1)
-
-    for p in List2D:
-        # Homogeneous pixel coordinate
-        p = np.array([p[0], p[1], 1]).T
-        p.shape = (3, 1)
-        # print("pixel: \n", p)
-
-        # Transform pixel in Camera coordinate frame
-        pc = np.linalg.inv(K) @ p
-        # print("pc : \n", pc, pc.shape)
-
-        # Transform pixel in World coordinate frame
-        pw = t + (R @ pc)
-        # print("pw : \n", pw, t.shape, R.shape, pc.shape)
-
-        # Transform camera origin in World coordinate frame
-        cam = np.array([0, 0, 0]).T
-        cam.shape = (3, 1)
-        cam_world = t + R @ cam
-        # print("cam_world : \n", cam_world)
-
-        # Find a ray from camera to 3d point
-        vector = pw - cam_world
-        unit_vector = vector / np.linalg.norm(vector)
-        # print("unit_vector : \n", unit_vector)
-
-        # Point scaled along this ray
-        p3D = cam_world + d * unit_vector
-        # print("p3D : \n", p3D)
-        List3D.append(p3D)
-
-    return List3D
-
+def XYZ_coords_to_csv(left_points, right_points, P1, P2, output_path):
+    df = pd.DataFrame(columns=['image_index', 'kpt_x', 'kpt_y', 'kpt_z'])
+    image_num = 1
+    for itr_im1, itr_im2 in zip(left_points, right_points):
+        for itr1, itr2 in zip(itr_im1, itr_im2):
+            p3ds = []
+            for lcp, rcp in zip(itr1, itr2):
+                _p3d = DLT(P1, P2, lcp, rcp)
+                p3ds.append(_p3d)
+            p3ds = np.array(p3ds)
+            for p in p3ds:
+                df2 = pd.DataFrame.from_records([{'image_index': image_num, 'kpt_x': int(p[0]), 'kpt_y': int(p[1]),
+                                                  'kpt_z': int(p[2])}])
+                df = pd.concat([df, df2])
+        image_num += 1
+    df.to_csv(output_path, mode='w+', index=False)
 
 if __name__ == "__main__":
 
@@ -349,12 +319,11 @@ if __name__ == "__main__":
                 right_camera_points.append(rfp)
                 itr_left += 1
                 itr_right += 1
-            # if len(imgs_right) > 0:
-            #     right_camera_points = plot_points(right_kpts, window)
-            # image = Image.open('data/pose_imgs/3.jpg')
-            # image.thumbnail((IM_HEIGHT, IM_WIDTH))
-            # bio = io.BytesIO()
-            # image.save(bio, format="PNG")
-            # window['-IMAGE-'].update(bio.getvalue())
-
+    print(f'size lfps: {len(left_camera_points)}')
+    print(left_camera_points)
+    XYZ_coords_to_csv(left_camera_points, right_camera_points, projection_matrix_1, projection_matrix_2,
+                      'data/out/XYZ_Coords.csv')
+    plot_keypoints_3d(left_camera_points[0], right_camera_points[0], projection_matrix_1, projection_matrix_2)
+    plt.show()
+    plt.waitforbuttonpress()
     window.close()
