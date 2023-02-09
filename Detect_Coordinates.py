@@ -241,6 +241,7 @@ def Get3Dfrom2D(List2D, K, R, t, d=1.75):
 
 
 if __name__ == "__main__":
+
     left_camera_points = []
     right_camera_points = []
 
@@ -264,33 +265,75 @@ if __name__ == "__main__":
     imgs_left = df_left.loc[:, 'image'].drop_duplicates()
     imgs_right = df_right.loc[:, 'image'].drop_duplicates()
 
+    sg.theme('Dark Blue 3')
     image_viewer_column = [
         [sg.Text("Here are the images: ")],
         # [sg.Image(key='-IMAGE_LEFT-')],
         # [sg.Image(key='-IMAGE_RIGHT-')]
     ]
     layout = [
+        [sg.Text(key='-INFO-', size=(60, 1))],
         [sg.Graph(
             canvas_size=(IM_WIDTH, IM_HEIGHT),
             graph_bottom_left=(0, IM_HEIGHT),
             graph_top_right=(IM_WIDTH, 0),
-            key="-GRAPH-"
+            key="-GRAPH-",
+            background_color='lightblue',
+            enable_events=True,
+            drag_submits=True
         )],
             # [sg.Column(image_viewer_column)],
         [sg.Button('show image', enable_events=True, key="-SHOW-")],
-        [sg.Button('exit', key='-EXIT-')]]
-    window = sg.Window(title='Keypoint Editor', layout=layout)
+        [sg.Button('exit', key='-EXIT-')],
+        [sg.R('Move Stuff', 1, key='-MOVE-', enable_events=True)]
+
+    ]
+    window = sg.Window(title='Keypoint Editor', layout=layout, size=(1080, 720),
+                       element_padding=5, location=(0, 0))
 
     itr_left = 0
     itr_right = 0
 
     window.finalize()
+    graph = window['-GRAPH-']
+    dragging = False
+    start_point = end_point = prior_rect = None
     while True:
         event, values = window.read()
         # End program if user closes window or
         # presses the OK button
         if event == "-EXIT-" or event == sg.WIN_CLOSED:
             break
+
+        if event in ('-MOVE-', '-MOVEALL-'):
+            graph.set_cursor(cursor='fleur')          # not yet released method... coming soon!
+        elif not event.startswith('-GRAPH-'):
+            graph.set_cursor(cursor='left_ptr')       # not yet released method... coming soon!
+
+        if event == "-GRAPH-":  # if there's a "Graph" event, then it's a mouse
+            x, y = values["-GRAPH-"]
+            if not dragging:
+                start_point = (x, y)
+                dragging = True
+                drag_figures = graph.get_figures_at_location((x, y))
+                lastxy = x, y
+            else:
+                end_point = (x, y)
+            if prior_rect:
+                graph.delete_figure(prior_rect)
+            delta_x, delta_y = x - lastxy[0], y - lastxy[1]
+            lastxy = x, y
+            if None not in (start_point, end_point):
+                if values['-MOVE-']:
+                    for fig in drag_figures:
+                        graph.move_figure(fig, delta_x, delta_y)
+                        graph.update()
+            window["-INFO-"].update(value=f"mouse {values['-GRAPH-']}")
+        elif event.endswith('+UP'):  # The drawing has ended because mouse up
+            window["-INFO-"].update(value=f"grabbed rectangle from {start_point} to {end_point}")
+            start_point, end_point = None, None  # enable grabbing a new rect
+            dragging = False
+            prior_rect = None
         if event == '-SHOW-':
             if (itr_left and itr_right) < len(imgs_left):
                 lfp, rfp = plot_points(imgs_left.iloc[itr_left], imgs_right.iloc[itr_right],
@@ -299,7 +342,6 @@ if __name__ == "__main__":
                 right_camera_points.append(rfp)
                 itr_left += 1
                 itr_right += 1
-
             # if len(imgs_right) > 0:
             #     right_camera_points = plot_points(right_kpts, window)
             # image = Image.open('data/pose_imgs/3.jpg')
