@@ -27,6 +27,10 @@ c = np.random.randint(1, 5, size=16)
 
 def plot_points(im_left, im_right, df_left, df_right, win):
     graph = win['-GRAPH-']
+    # TODO: delete if doesn't work
+    # graph.grab_anywhere_exclude()
+    # clear graph to fix issue of overlapping images
+    graph.erase()
     left_xy_coord = []
     right_xy_coord = []
     # print(f'{type(im_dir)}')
@@ -316,6 +320,9 @@ if __name__ == "__main__":
                 start_point = (x, y)
                 dragging = True
                 drag_figures = graph.get_figures_at_location((x, y))
+                drag_figures = tuple([d for d in drag_figures if d != 1 if d != 2])
+                for d in drag_figures:
+                    print(f'figure {d}')
                 lastxy = x, y
             else:
                 end_point = (x, y)
