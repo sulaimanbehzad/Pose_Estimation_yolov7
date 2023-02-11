@@ -84,6 +84,7 @@ def visualize_output(output, image):
     nimg = nimg.cpu().numpy().astype(np.uint8)
     nimg = cv2.cvtColor(nimg, cv2.COLOR_RGB2BGR)
     for idx in range(output.shape[0]):
+        print(f'keypoints for skeleton: {output[idx, 7:].T}') # has dimension: 48 : 16 x, 16 y, 16 threshold
         plot_skeleton_kpts(nimg, output[idx, 7:].T, 3)
     plt.figure(figsize=(12, 12))
     plt.axis('off')
@@ -153,13 +154,13 @@ def save_kpts(imgs_path, out_path, orig_shape=None):
                                          nc=model.yaml['nc'],  # Number of Classes
                                          nkpt=model.yaml['nkpt'],  # Number of Keypoints
                                          kpt_label=True)
-        # TODO: get keypoint label and save it in dataframe
+        # DONE: get keypoint label and save it in dataframe
         with torch.no_grad():
             output = output_to_keypoint(output)
         # print(f'output: {output}')
         for idx in range(output.shape[0]):
             kpts = output[idx, 7:].T
-            steps = 3
+            steps = 3 # where's the next datapoint located
             num_kpts = len(kpts)//steps
             for kid in range(num_kpts):
                 x_coord, y_coord = kpts[steps * kid], kpts[steps * kid + 1]
@@ -177,6 +178,80 @@ def save_kpts(imgs_path, out_path, orig_shape=None):
                     # print(f'df after concat: {df}')
     df.to_csv(out_path, mode='w+', index=False)
 
+def save_keypoint_with_id(imgs_path, out_path, orig_shape=None):
+    palette = np.array([[255, 128, 0], [255, 153, 51], [255, 178, 102],
+                        [230, 230, 0], [255, 153, 255], [153, 204, 255],
+                        [255, 102, 255], [255, 51, 255], [102, 178, 255],
+                        [51, 153, 255], [255, 153, 153], [255, 102, 102],
+                        [255, 51, 51], [153, 255, 153], [102, 255, 102],
+                        [51, 255, 51], [0, 255, 0], [0, 0, 255], [255, 0, 0],
+                        [255, 255, 255]])
+
+    skeleton = [[16, 14], [14, 12], [17, 15], [15, 13], [12, 13], [6, 12],
+                [7, 13], [6, 7], [6, 8], [7, 9], [8, 10], [9, 11], [2, 3],
+                [1, 2], [1, 3], [2, 4], [3, 5], [4, 6], [5, 7]]
+
+    pose_limb_color = palette[[9, 9, 9, 9, 7, 7, 7, 0, 0, 0, 0, 0, 16, 16, 16, 16, 16, 16, 16]]
+    pose_kpt_color = palette[[16, 16, 16, 16, 16, 0, 0, 0, 0, 0, 0, 9, 9, 9, 9, 9, 9]]
+    radius = 5
+    steps = 3
+
+    df = pd.DataFrame(columns=['image', 'kpt_x', 'kpt_y', 'sk_id'])
+    # 'keypoint_label'
+    for img_p in imgs_path:
+        output, _ = run_inference(img_p)
+        output = non_max_suppression_kpt(output,
+                                         0.25,  # Confidence Threshold
+                                         0.65,  # IoU Threshold
+                                         nc=model.yaml['nc'],  # Number of Classes
+                                         nkpt=model.yaml['nkpt'],  # Number of Keypoints
+                                         kpt_label=True)
+        # TODO: get keypoint label and save it in dataframe
+        with torch.no_grad():
+            output = output_to_keypoint(output)
+        # print(f'output: {output}')
+        for idx in range(output.shape[0]):
+            kpts = output[idx, 7:].T
+            steps = 3 # where's the next datapoint located
+            num_kpts = len(kpts)//steps
+            for kid in range(num_kpts):
+                x_coord, y_coord = kpts[steps * kid], kpts[steps * kid + 1]
+                if not (x_coord % 640 == 0 or y_coord % 640 == 0):
+                    if steps == 3:
+                        conf = kpts[steps * kid + 2]
+                        if conf < 0.5:
+                            continue
+                    # cv2.circle(im, (int(x_coord), int(y_coord)), radius, (255,0,0), -1)
+                    print(f'x: {x_coord} - y: {y_coord}')
+                    df2 = pd.DataFrame.from_records([{'image': img_p, 'kpt_x': int(x_coord), 'kpt_y': int(y_coord)}])
+                    # print(f'{df2}')
+                    # print(f'df before concat: {df}')
+                    df = pd.concat([df, df2])
+                    # print(f'df after concat: {df}')
+            for sk_id, sk in enumerate(skeleton):
+                r, g, b = pose_limb_color[sk_id]
+                pos1 = (int(kpts[(sk[0] - 1) * steps]), int(kpts[(sk[0] - 1) * steps + 1]))
+                pos2 = (int(kpts[(sk[1] - 1) * steps]), int(kpts[(sk[1] - 1) * steps + 1]))
+                if steps == 3:
+                    conf1 = kpts[(sk[0] - 1) * steps + 2]
+                    conf2 = kpts[(sk[1] - 1) * steps + 2]
+                    if conf1 < 0.5 or conf2 < 0.5:
+                        continue
+                if pos1[0] % 640 == 0 or pos1[1] % 640 == 0 or pos1[0] < 0 or pos1[1] < 0:
+                    continue
+                if pos2[0] % 640 == 0 or pos2[1] % 640 == 0 or pos2[0] < 0 or pos2[1] < 0:
+                    continue
+                # add this line to check ids of skeleton +' sk ' + str(sk)
+                condition = [df['kpt_x'].eq(pos1[0]) & df['kpt_y'].eq(pos1[1])]
+                print(f'x values {df.kpt_x}')
+                df["sk_id"] = np.where(((df['kpt_x'] == pos1[0]) & (df['kpt_y'] == pos1[1])), sk_id, df['sk_id'])
+                df["sk_id"] = np.where(((df['kpt_x'] == pos2[0]) & (df['kpt_y'] == pos2[1])), sk_id, df['sk_id'])
+
+                # cv2.putText(im, 'id ' + str(sk_id), pos1, cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 50, 255), 2)
+
+    df.to_csv(out_path, mode='w+', index=False)
+
+
 left_imgs_path = 'data/pose_imgs/Pose4/leftcamera'
 right_imgs_path = 'data/pose_imgs/Pose4/rightcamera'
 output_left_keypoints = 'data/out/keypoint_left.csv'
@@ -188,12 +263,13 @@ print('Before: {}, {}, {}, ...'.format(os.listdir(left_imgs_path)[0], os.listdir
 left_sorted = SortImageNames(left_imgs_path)
 right_sorted = SortImageNames(right_imgs_path)
 print('After: {}, {}, {}, ...'.format(os.path.basename(left_sorted[0]), os.path.basename(left_sorted[1]), os.path.basename(left_sorted[2])))
-# left_output, left_image = multiple_pics_inference(left_imgs_path)
-# right_output, right_image = multiple_pics_inference(right_imgs_path)
+left_output, left_image = multiple_pics_inference(left_imgs_path)
+right_output, right_image = multiple_pics_inference(right_imgs_path)
 # visualize_multiple_pics(left_output,left_image)
 # get_keypoints(left_output[2], left_image[2])
-save_kpts(left_sorted, out_path=output_left_keypoints)
-save_kpts(right_sorted,out_path=output_right_keypoints)
+# visualize_output(left_output[2], left_image[2])
+save_keypoint_with_id(left_sorted, out_path=output_left_keypoints)
+save_keypoint_with_id(right_sorted,out_path=output_right_keypoints)
 print(f'GPU: {torch.cuda.is_available()}')
 print(f'GPU: {torch.cuda.device_count()}')
 print(f'GPU: {torch.cuda.current_device()}')
