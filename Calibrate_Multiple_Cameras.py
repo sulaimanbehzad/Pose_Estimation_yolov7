@@ -77,7 +77,7 @@ def GenerateImagepoints(paths):
         img = cv2.resize(img, (IM_WIDTH, IM_HEIGHT))
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         height, width = gray.shape[:2]
-        print(f'width: {width} - {height}')
+        # print(f'width: {width} - {height}')
         temp = gray
         # if height > 1000:
         #     temp = cv2.GaussianBlur(gray, (0, 0), cv2.BORDER_DEFAULT)
