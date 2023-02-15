@@ -6,6 +6,8 @@ import cv2 as cv
 import pandas as pd
 from matplotlib.offsetbox import (TextArea, DrawingArea, OffsetImage, AnnotationBbox)
 import PySimpleGUI as sg
+import pickle
+import codecs
 
 IM_HEIGHT = 576
 IM_WIDTH = 1024
@@ -24,9 +26,26 @@ labels2 = ['f1', 'f2', 'f3', 'f4', 'r_shoulder', 'f_shoulder', 'r_elbow', 'l_elb
 labels = list('ABCDEFGHIJKLMNOP')
 c = np.random.randint(1, 5, size=16)
 
+skeleton = [[16, 14], [14, 12], [17, 15], [15, 13], [12, 13], [6, 12],
+            [7, 13], [6, 7], [6, 8], [7, 9], [8, 10], [9, 11], [2, 3],
+            [1, 2], [1, 3], [2, 4], [3, 5], [4, 6], [5, 7]]
+palette = np.array([[255, 128, 0], [255, 153, 51], [255, 178, 102],
+                    [230, 230, 0], [255, 153, 255], [153, 204, 255],
+                    [255, 102, 255], [255, 51, 255], [102, 178, 255],
+                    [51, 153, 255], [255, 153, 153], [255, 102, 102],
+                    [255, 51, 51], [153, 255, 153], [102, 255, 102],
+                    [51, 255, 51], [0, 255, 0], [0, 0, 255], [255, 0, 0],
+                    [255, 255, 255]])
+pose_limb_color = palette[[9, 9, 9, 9, 7, 7, 7, 0, 0, 0, 0, 0, 16, 16, 16, 16, 16, 16, 16]]
+pose_kpt_color = palette[[16, 16, 16, 16, 16, 0, 0, 0, 0, 0, 0, 9, 9, 9, 9, 9, 9]]
+
 
 def plot_points(im_left, im_right, df_left, df_right, win):
     graph = win['-GRAPH-']
+    # TODO: delete if doesn't work
+    # graph.grab_anywhere_exclude()
+    # clear graph to fix issue of overlapping images
+    graph.erase()
     left_xy_coord = []
     right_xy_coord = []
     # print(f'{type(im_dir)}')
@@ -37,8 +56,8 @@ def plot_points(im_left, im_right, df_left, df_right, win):
     image_right = Image.open(im_right)
     # image_left.thumbnail((IM_HEIGHT, IM_WIDTH))
     # image_right.thumbnail((IM_HEIGHT, IM_WIDTH))
-    image_left = image_left.resize((IM_WIDTH//2, IM_HEIGHT//2))
-    image_right = image_right.resize((IM_WIDTH//2, IM_HEIGHT//2))
+    image_left = image_left.resize((IM_WIDTH // 2, IM_HEIGHT // 2))
+    image_right = image_right.resize((IM_WIDTH // 2, IM_HEIGHT // 2))
     bio_left = io.BytesIO()
     bio_right = io.BytesIO()
 
@@ -49,7 +68,7 @@ def plot_points(im_left, im_right, df_left, df_right, win):
     try:
         print('drawing image')
         graph.draw_image(data=data1, location=(0, 0))
-        graph.draw_image(data=data2, location=(IM_WIDTH/2, 0))
+        graph.draw_image(data=data2, location=(IM_WIDTH / 2, 0))
 
     except:
         pass
@@ -60,13 +79,31 @@ def plot_points(im_left, im_right, df_left, df_right, win):
     camera_points_left = vals_left[['kpt_x', 'kpt_y']].to_numpy()
     camera_points_right = vals_right[['kpt_x', 'kpt_y']].to_numpy()
 
+    left_xy_coord.append(camera_points_left)
+    right_xy_coord.append(camera_points_right)
+
     for cpl, cpr in zip(camera_points_left, camera_points_right):
         print(f'cpl: {cpl} - cpr: {cpr}')
-        graph.draw_circle(center_location=(cpl[0]/2, cpl[1]/2), radius=5, fill_color='black', line_color='red')
+        graph.draw_circle(center_location=(cpl[0] / 2, cpl[1] / 2), radius=5, fill_color='black', line_color='red')
         cpr[0] /= 2
-        cpr[0] += IM_WIDTH/2
-        graph.draw_circle(center_location=(cpr[0], cpr[1]/2), radius=5, fill_color='black', line_color='red')
-
+        cpr[0] += IM_WIDTH / 2
+        graph.draw_circle(center_location=(cpr[0], cpr[1] / 2), radius=5, fill_color='black', line_color='red')
+    # kpts = left_camera_points
+    # steps = 2
+    # for sk_id, sk in enumerate(skeleton):
+    #     r, g, b = pose_limb_color[sk_id]
+    #     pos1 = (int(kpts[(sk[0]-1)*steps]), int(kpts[(sk[0]-1)*steps+1]))
+    #     pos2 = (int(kpts[(sk[1]-1)*steps]), int(kpts[(sk[1]-1)*steps+1]))
+    #     if steps == 3:
+    #         conf1 = kpts[(sk[0]-1)*steps+2]
+    #         conf2 = kpts[(sk[1]-1)*steps+2]
+    #         if conf1<0.5 or conf2<0.5:
+    #             continue
+    #     if pos1[0]%640 == 0 or pos1[1]%640==0 or pos1[0]<0 or pos1[1]<0:
+    #         continue
+    #     if pos2[0] % 640 == 0 or pos2[1] % 640 == 0 or pos2[0]<0 or pos2[1]<0:
+    #         continue
+    #     graph.line(pos1, pos2, (int(r), int(g), int(b)), thickness=2)
     # for im in imgs:
     #     image = Image.open(im)
     #     image.thumbnail((IM_HEIGHT, IM_WIDTH))
@@ -91,6 +128,128 @@ def plot_points(im_left, im_right, df_left, df_right, win):
     return left_xy_coord, right_xy_coord
 
 
+def rgb_to_hex(rgb):
+    return '%02x%02x%02x' % rgb
+
+
+def draw_image_pair(im_left, im_right, graph):
+    image_left = Image.open(im_left)
+    image_right = Image.open(im_right)
+
+    image_left = image_left.resize((IM_WIDTH // 2, IM_HEIGHT // 2))
+    image_right = image_right.resize((IM_WIDTH // 2, IM_HEIGHT // 2))
+
+    bio_left = io.BytesIO()
+    bio_right = io.BytesIO()
+
+    image_left.save(bio_left, format="PNG")
+    image_right.save(bio_right, format="PNG")
+    data1 = bio_left.getvalue()
+    data2 = bio_right.getvalue()
+    try:
+        print('drawing image')
+        graph.draw_image(data=data1, location=(0, 0))
+        graph.draw_image(data=data2, location=(IM_WIDTH / 2, 0))
+
+    except Exception as inst:
+        print(inst)
+
+
+def draw_image_details(im_left, im_right, df_left, df_right, win):
+    graph = win['-GRAPH-']
+    graph.erase()
+    left_xy_coord = []
+    right_xy_coord = []
+    draw_image_pair(im_left, im_right, graph)
+
+    vals_left = df_left.loc[df_left['image'] == im_left]
+    vals_right = df_right.loc[df_right['image'] == im_right]
+
+    output_left = pickle.loads(codecs.decode(vals_left.iloc[0]['output'].encode(), "base64"))
+    output_right = pickle.loads(codecs.decode(vals_right.iloc[0]['output'].encode(), "base64"))
+    print(f'vals left: \n{output_left} \nvalse right: \n{output_right}')
+    # output_right = pickle.loads(codecs.decode(vals_right['output'].encode(), "base64"))
+    # print(f'len output: {len(output_left)} \nleft output: {output_left}')
+    steps = 3  # where's the next datapoint located
+    num_kpts = len(output_left) // steps
+    for kid in range(num_kpts):
+        x_coord, y_coord = output_left[steps * kid], output_left[steps * kid + 1]
+        if not (x_coord % 640 == 0 or y_coord % 640 == 0):
+            if steps == 3:
+                conf = output_left[steps * kid + 2]
+                if conf < 0.5:
+                    continue
+        left_xy_coord.append([x_coord, y_coord])
+
+    num_kpts = len(output_right) // steps
+    for kid in range(num_kpts):
+        x_coord, y_coord = output_right[steps * kid], output_right[steps * kid + 1]
+        if not (x_coord % 640 == 0 or y_coord % 640 == 0):
+            if steps == 3:
+                conf = output_right[steps * kid + 2]
+                if conf < 0.5:
+                    continue
+        right_xy_coord.append([x_coord, y_coord])
+
+    # for cpl, cpr in zip(right_xy_coord, left_xy_coord):
+    #     print(f'cpl: {cpl} - cpr: {cpr}')
+    #     graph.draw_circle(center_location=(cpl[0] / 2, cpl[1] / 2), radius=5, fill_color='black', line_color='red')
+    #     cpr[0] /= 2
+    #     cpr[0] += IM_WIDTH / 2
+    #     graph.draw_circle(center_location=(cpr[0], cpr[1] / 2), radius=5, fill_color='black', line_color='red')
+    draw_skeleton_2D(output_left, 3, True)
+    draw_skeleton_2D(output_right, 3, False)
+    return left_xy_coord, right_xy_coord
+
+def draw_skeleton_2D(kpts, steps, is_left):
+    for sk_id, sk in enumerate(skeleton):
+        r, g, b = pose_limb_color[sk_id]
+        if is_left:
+            pos1 = (int(kpts[(sk[0] - 1) * steps] // 2), int(kpts[(sk[0] - 1) * steps + 1]) // 2)
+            pos2 = (int(kpts[(sk[1] - 1) * steps] // 2), int(kpts[(sk[1] - 1) * steps + 1]) // 2)
+        else:
+            pos1 = (int(kpts[(sk[0] - 1) * steps] // 2) + (IM_WIDTH/2), int(kpts[(sk[0] - 1) * steps + 1]) // 2)
+            pos2 = (int(kpts[(sk[1] - 1) * steps] // 2) + (IM_WIDTH/2), int(kpts[(sk[1] - 1) * steps + 1]) // 2)
+        if steps == 3:
+            conf1 = kpts[(sk[0] - 1) * steps + 2]
+            conf2 = kpts[(sk[1] - 1) * steps + 2]
+            if conf1 < 0.5 or conf2 < 0.5:
+                continue
+        if pos1[0] % 640 == 0 or pos1[1] % 640 == 0 or pos1[0] < 0 or pos1[1] < 0:
+            continue
+        if pos2[0] % 640 == 0 or pos2[1] % 640 == 0 or pos2[0] < 0 or pos2[1] < 0:
+            continue
+        hex_color = rgb_to_hex((r, g, b))
+        hex_color = '#' + hex_color
+        print(f'RGB: {r} {g} {b} \n  hex: {hex_color}')
+        graph.draw_line(pos1, pos2, hex_color, width=4)
+        print(f'drew line from  {pos1} to {pos2}')
+        graph.draw_text(str(sk_id), pos1, color='black')
+
+def pixel_to_world(camera_intrinsics, r, t, img_points):
+    K_inv = camera_intrinsics.I
+    R_inv = np.asmatrix(r).I
+    R_inv_T = np.dot(R_inv, np.asmatrix(t))
+    world_points = []
+    coords = np.zeros((3, 1), dtype=np.float64)
+    for img_point in img_points:
+        coords[0] = img_point[0]
+        coords[1] = img_point[1]
+        coords[2] = 1.0
+        cam_point = np.dot(K_inv, coords)
+        cam_R_inv = np.dot(R_inv, cam_point)
+        scale = R_inv_T[2][0] / cam_R_inv[2][0]
+        scale_world = np.multiply(scale, cam_R_inv)
+        world_point = np.asmatrix(scale_world) - np.asmatrix(R_inv_T)
+        pt = np.zeros((3, 1), dtype=np.float64)
+        pt[0] = world_point[0]
+        pt[1] = world_point[1]
+        pt[2] = 0
+        world_points.append(pt.T.tolist())
+
+    return world_points
+
+
 def DLT(P1, P2, point1, point2):
     A = [point1[1] * P1[2, :] - P1[1, :],
          P1[0, :] - point1[0] * P1[2, :],
@@ -105,15 +264,15 @@ def DLT(P1, P2, point1, point2):
     from scipy import linalg
     U, s, Vh = linalg.svd(B, full_matrices=False)
 
-    # print('Triangulated point: ')
-    # print(Vh[3, 0:3] / Vh[3, 3])
+    print('Triangulated point: ')
+    print(Vh[3, 0:3] / Vh[3, 3])
     return Vh[3, 0:3] / Vh[3, 3]
 
 
 def plot_keypoints_3d(lkpts, rkpts, P1, P2):
+    print('plot 3d')
     for itr1, itr2 in zip(lkpts, rkpts):
         p3ds = []
-
         for lcp, rcp in zip(itr1, itr2):
             _p3d = DLT(P1, P2, lcp, rcp)
             p3ds.append(_p3d)
@@ -124,19 +283,21 @@ def plot_keypoints_3d(lkpts, rkpts, P1, P2):
 
         from mpl_toolkits.mplot3d import Axes3D
 
-        min_thresh = np.min(p3ds)
-        max_thresh = np.max(p3ds)
+        # min_thresh = np.min(p3ds)
+        # max_thresh = np.max(p3ds)
         fig = plt.figure()
         ax = fig.add_subplot(projection='3d')
-        ax.set_xlim3d(min_thresh, max_thresh)
-        ax.set_ylim3d(min_thresh, max_thresh)
-        ax.set_zlim3d(min_thresh, max_thresh)
+        ax.set_xlim3d(np.min(p3ds[0]), np.max(p3ds[0]))
+        ax.set_ylim3d(np.min(p3ds[1]), np.max(p3ds[2]))
+        ax.set_zlim3d(np.min(p3ds[2]), np.max(p3ds[2]))
         prev_p = []
         for p in p3ds:
             ax.scatter(xs=p[0], ys=p[1], zs=p[2], c='red', s=3)
-            if len(prev_p) > 0:
-                ax.plot([prev_p[0], p[0]], [prev_p[1], p[1]], [prev_p[2], p[2]], color='black')
-            prev_p = p
+            # if len(prev_p) > 0:
+            #     ax.plot([prev_p[0], p[0]], [prev_p[1], p[1]], [prev_p[2], p[2]], color='black')
+            # prev_p = p
+        # show origin point
+        ax.scatter(0, 0, 0, c='black', s=5)
 
 
 # left_camera_points = plot_points(left_kpts)
@@ -160,8 +321,6 @@ def plot_keypoints_3d(lkpts, rkpts, P1, P2):
 # plt.scatter(right_camera_points[:, 0], right_camera_points[:, 1])
 # plt.show()
 
-
-# plot_keypoints_3d(left_camera_points, right_camera_points, projection_matrix_1, projection_matrix_2)
 
 # p3ds = []
 #
@@ -191,56 +350,25 @@ def plot_keypoints_3d(lkpts, rkpts, P1, P2):
 #     print(p3ds[_c[1]])
 #     ax.plot(xs=[p3ds[_c[0], 0], p3ds[_c[1], 0]], ys=[p3ds[_c[0], 1], p3ds[_c[1], 1]],
 #             zs=[p3ds[_c[0], 2], p3ds[_c[1], 2]], c='red')
-plt.show()
-
-
-def Get3Dfrom2D(List2D, K, R, t, d=1.75):
-    # List2D : n x 2 array of pixel locations in an image
-    # K : Intrinsic matrix for camera
-    # R : Rotation matrix describing rotation of camera frame
-    #     w.r.t world frame.
-    # t : translation vector describing the translation of camera frame
-    #     w.r.t world frame
-    # [R t] combined is known as the Camera Pose.
-
-    List2D = np.array(List2D)
-    List3D = []
-    # t.shape = (3,1)
-
-    for p in List2D:
-        # Homogeneous pixel coordinate
-        p = np.array([p[0], p[1], 1]).T
-        p.shape = (3, 1)
-        # print("pixel: \n", p)
-
-        # Transform pixel in Camera coordinate frame
-        pc = np.linalg.inv(K) @ p
-        # print("pc : \n", pc, pc.shape)
-
-        # Transform pixel in World coordinate frame
-        pw = t + (R @ pc)
-        # print("pw : \n", pw, t.shape, R.shape, pc.shape)
-
-        # Transform camera origin in World coordinate frame
-        cam = np.array([0, 0, 0]).T
-        cam.shape = (3, 1)
-        cam_world = t + R @ cam
-        # print("cam_world : \n", cam_world)
-
-        # Find a ray from camera to 3d point
-        vector = pw - cam_world
-        unit_vector = vector / np.linalg.norm(vector)
-        # print("unit_vector : \n", unit_vector)
-
-        # Point scaled along this ray
-        p3D = cam_world + d * unit_vector
-        # print("p3D : \n", p3D)
-        List3D.append(p3D)
-
-    return List3D
-
+def XYZ_coords_to_csv(left_points, right_points, P1, P2, output_path):
+    df = pd.DataFrame(columns=['image_index', 'kpt_x', 'kpt_y', 'kpt_z'])
+    image_num = 1
+    for itr_im1, itr_im2 in zip(left_points, right_points):
+        for itr1, itr2 in zip(itr_im1, itr_im2):
+            p3ds = []
+            for lcp, rcp in zip(itr1, itr2):
+                _p3d = DLT(P1, P2, lcp, rcp)
+                p3ds.append(_p3d)
+            p3ds = np.array(p3ds)
+            for p in p3ds:
+                df2 = pd.DataFrame.from_records([{'image_index': image_num, 'kpt_x': int(p[0]), 'kpt_y': int(p[1]),
+                                                  'kpt_z': int(p[2])}])
+                df = pd.concat([df, df2])
+        image_num += 1
+    df.to_csv(output_path, mode='w+', index=False)
 
 if __name__ == "__main__":
+
     left_camera_points = []
     right_camera_points = []
 
@@ -264,48 +392,91 @@ if __name__ == "__main__":
     imgs_left = df_left.loc[:, 'image'].drop_duplicates()
     imgs_right = df_right.loc[:, 'image'].drop_duplicates()
 
+    sg.theme('Dark Blue 3')
     image_viewer_column = [
         [sg.Text("Here are the images: ")],
         # [sg.Image(key='-IMAGE_LEFT-')],
         # [sg.Image(key='-IMAGE_RIGHT-')]
     ]
     layout = [
+        [sg.Text(key='-INFO-', size=(60, 1))],
         [sg.Graph(
             canvas_size=(IM_WIDTH, IM_HEIGHT),
             graph_bottom_left=(0, IM_HEIGHT),
             graph_top_right=(IM_WIDTH, 0),
-            key="-GRAPH-"
+            key="-GRAPH-",
+            background_color='lightblue',
+            enable_events=True,
+            drag_submits=True
         )],
-            # [sg.Column(image_viewer_column)],
+        # [sg.Column(image_viewer_column)],
         [sg.Button('show image', enable_events=True, key="-SHOW-")],
-        [sg.Button('exit', key='-EXIT-')]]
-    window = sg.Window(title='Keypoint Editor', layout=layout)
+        [sg.Button('exit', key='-EXIT-')],
+        [sg.R('Move Stuff', 1, key='-MOVE-', enable_events=True)]
+
+    ]
+    window = sg.Window(title='Keypoint Editor', layout=layout, size=(1080, 720),
+                       element_padding=5, location=(0, 0))
 
     itr_left = 0
     itr_right = 0
 
     window.finalize()
+    graph = window['-GRAPH-']
+    dragging = False
+    start_point = end_point = prior_rect = None
     while True:
         event, values = window.read()
         # End program if user closes window or
         # presses the OK button
         if event == "-EXIT-" or event == sg.WIN_CLOSED:
             break
+
+        if event in ('-MOVE-', '-MOVEALL-'):
+            graph.set_cursor(cursor='fleur')  # not yet released method... coming soon!
+        elif not event.startswith('-GRAPH-'):
+            graph.set_cursor(cursor='left_ptr')  # not yet released method... coming soon!
+
+        if event == "-GRAPH-":  # if there's a "Graph" event, then it's a mouse
+            x, y = values["-GRAPH-"]
+            if not dragging:
+                start_point = (x, y)
+                dragging = True
+                drag_figures = graph.get_figures_at_location((x, y))
+                drag_figures = tuple([d for d in drag_figures if d != 1 if d != 2])
+                for d in drag_figures:
+                    print(f'figure {d}')
+                lastxy = x, y
+            else:
+                end_point = (x, y)
+            if prior_rect:
+                graph.delete_figure(prior_rect)
+            delta_x, delta_y = x - lastxy[0], y - lastxy[1]
+            lastxy = x, y
+            if None not in (start_point, end_point):
+                if values['-MOVE-']:
+                    for fig in drag_figures:
+                        graph.move_figure(fig, delta_x, delta_y)
+                        graph.update()
+            window["-INFO-"].update(value=f"mouse {values['-GRAPH-']}")
+        elif event.endswith('+UP'):  # The drawing has ended because mouse up
+            window["-INFO-"].update(value=f"grabbed rectangle from {start_point} to {end_point}")
+            start_point, end_point = None, None  # enable grabbing a new rect
+            dragging = False
+            prior_rect = None
         if event == '-SHOW-':
             if (itr_left and itr_right) < len(imgs_left):
-                lfp, rfp = plot_points(imgs_left.iloc[itr_left], imgs_right.iloc[itr_right],
-                                       df_left, df_right, window)
+                lfp, rfp = draw_image_details(imgs_left.iloc[itr_left], imgs_right.iloc[itr_right], df_left, df_right,
+                                         window)
                 left_camera_points.append(lfp)
                 right_camera_points.append(rfp)
                 itr_left += 1
                 itr_right += 1
-
-            # if len(imgs_right) > 0:
-            #     right_camera_points = plot_points(right_kpts, window)
-            # image = Image.open('data/pose_imgs/3.jpg')
-            # image.thumbnail((IM_HEIGHT, IM_WIDTH))
-            # bio = io.BytesIO()
-            # image.save(bio, format="PNG")
-            # window['-IMAGE-'].update(bio.getvalue())
-
+    print(f'size lfps: {len(left_camera_points)}')
+    print(left_camera_points)
+    XYZ_coords_to_csv(left_camera_points, right_camera_points, projection_matrix_1, projection_matrix_2,
+                      'data/out/XYZ_Coords.csv')
+    plot_keypoints_3d(left_camera_points[1], right_camera_points[1], projection_matrix_1, projection_matrix_2)
+    plt.show()
+    plt.waitforbuttonpress()
     window.close()

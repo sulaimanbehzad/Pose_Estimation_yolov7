@@ -487,3 +487,5 @@ def plot_skeleton_kpts(im, kpts, steps, orig_shape=None):
         if pos2[0] % 640 == 0 or pos2[1] % 640 == 0 or pos2[0]<0 or pos2[1]<0:
             continue
         cv2.line(im, pos1, pos2, (int(r), int(g), int(b)), thickness=2)
+        # add this line to check ids of skeleton +' sk ' + str(sk)
+        cv2.putText(im, 'id ' + str(sk_id) , pos1, cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,50,255), 2)
