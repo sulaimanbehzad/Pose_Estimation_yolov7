@@ -319,58 +319,6 @@ def plot_keypoints_3d(lkpts, rkpts, P1, P2):
     # show origin point
     ax.scatter(0, 0, 0, c='black', s=5)
 
-
-
-# left_camera_points = plot_points(left_kpts)
-# right_camera_points = plot_points(right_kpts)
-
-# print(left_camera_points)
-
-# # left_camera_points = np.array(left_camera_points)
-# right_camera_points = np.array(right_camera_points)
-#
-# frame1 = cv.imread('data/pose_imgs/Pose3/LeftCamera/Im_L_5.jpg')
-# frame1 = cv.resize(frame1, (IM_WIDTH, IM_HEIGHT))
-# frame2 = cv.imread('data/pose_imgs/Pose3/RightCamera/Im_R_5.jpg')
-# frame2 = cv.resize(frame2, (IM_WIDTH, IM_HEIGHT))
-#
-# plt.imshow(frame1[:, :, [2, 1, 0]])
-# plt.scatter(left_camera_points[:, 0], left_camera_points[:, 1])
-# plt.show()
-#
-# plt.imshow(frame2[:, :, [2, 1, 0]])
-# plt.scatter(right_camera_points[:, 0], right_camera_points[:, 1])
-# plt.show()
-
-
-# p3ds = []
-#
-# for lcp, rcp in zip(left_camera_points, right_camera_points):
-#     _p3d = DLT(P1, P2, lcp, rcp)
-#     p3ds.append(_p3d)
-# p3ds = np.array(p3ds)
-#
-# for p in p3ds:
-#     print(p)
-#
-# from mpl_toolkits.mplot3d import Axes3D
-#
-# min_thresh = np.min(p3ds)
-# max_thresh = np.max(p3ds)
-# fig = plt.figure()
-# ax = fig.add_subplot(111, projection='3d')
-# ax.set_xlim3d(min_thresh, max_thresh)
-# ax.set_ylim3d(min_thresh, max_thresh)
-# ax.set_zlim3d(min_thresh, max_thresh)
-# for p in p3ds:
-#     ax.scatter(xs=p[0], ys=p[1], zs=p[2], c='red')
-#             zs=[p3ds[_c[0], 2], p3ds[_c[1], 2]], c='red'))
-# connections = [[0, 1], [1, 2], [2, 3], [3, 4], [1, 5], [5, 6], [6, 7], [1, 8], [1, 9], [2, 8], [5, 9], [8, 9], [0, 10]]
-# for _c in connections:
-#     print(p3ds[_c[0]])
-#     print(p3ds[_c[1]])
-#     ax.plot(xs=[p3ds[_c[0], 0], p3ds[_c[1], 0]], ys=[p3ds[_c[0], 1], p3ds[_c[1], 1]],
-#             zs=[p3ds[_c[0], 2], p3ds[_c[1], 2]], c='red')
 def XYZ_coords_to_csv(left_points, right_points, P1, P2, output_path):
     df = pd.DataFrame(columns=['image_index', 'kpt_x', 'kpt_y', 'kpt_z', 'label'])
     image_num = 1
