@@ -488,4 +488,5 @@ def plot_skeleton_kpts(im, kpts, steps, orig_shape=None):
             continue
         cv2.line(im, pos1, pos2, (int(r), int(g), int(b)), thickness=2)
         # add this line to check ids of skeleton +' sk ' + str(sk)
-        cv2.putText(im, 'id ' + str(sk_id) , pos1, cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,50,255), 2)
+        cv2.putText(im, str(sk_id), pos1, cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0,50,255), 1)
+        # TODO: change back to id and match number here with index of the labels
