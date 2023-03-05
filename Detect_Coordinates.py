@@ -190,15 +190,26 @@ def draw_image_details(im_left, im_right, df_im_left, df_right, win):
                     continue
         right_xy_coord.append([int(x_coord), int(y_coord)])
 
-    # for cpl, cpr in zip(right_xy_coord, left_xy_coord):
-    #     print(f'cpl: {cpl} - cpr: {cpr}')
-    #     graph.draw_circle(center_location=(cpl[0] / 2, cpl[1] / 2), radius=5, fill_color='black', line_color='red')
-    #     cpr[0] /= 2
-    #     cpr[0] += IM_WIDTH / 2
-    #     graph.draw_circle(center_location=(cpr[0], cpr[1] / 2), radius=5, fill_color='black', line_color='red')
+    for i in range(1, 16):
+        point = point_to_gui_coordinate(left_xy_coord[i-1], True)
+        window[f'txt{i}'].update(str(point))
     draw_skeleton_2D(output_left, left_xy_coord, 3, True)
     draw_skeleton_2D(output_right, right_xy_coord, 3, False)
+    for cpl, cpr in zip(left_xy_coord, right_xy_coord):
+        print(f'cpl: {cpl} - cpr: {cpr}')
+        graph.draw_circle(center_location=point_to_gui_coordinate(cpl, True), radius=4, fill_color='yellow', line_color='red')
+        graph.draw_circle(center_location=point_to_gui_coordinate(cpr, False), radius=4, fill_color='yellow', line_color='red')
     return left_xy_coord, right_xy_coord
+
+def point_to_gui_coordinate(point, is_left):
+    ret_point = [-1, -1]
+    if is_left:
+        ret_point[0] = point[0] / 2
+    else:
+        ret_point[0] = point[0]/2
+        ret_point[0] += IM_WIDTH/2
+    ret_point[1] = point[1]
+    return ret_point
 
 
 def draw_skeleton_2D(kpts, coords_and_label, steps, is_left):
