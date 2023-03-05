@@ -20,7 +20,7 @@ param_path = 'data/out/parameters.npz'
 # you can import them to a dictionary and access the parameters
 params = dict(np.load(param_path))
 print(params.keys())
-labels2 = ['l_ankle', 'l_knee', 'r_ankle', 'r_knee', 'mid1', 'f1', 'f2', 'f3', 'l_shoulder','r_shoulder', 'l_elbow',
+labels2 = ['l_ankle', 'l_knee', 'r_ankle', 'r_knee', 'mid1', 'f1', 'f2', 'f3', 'l_shoulder', 'r_shoulder', 'l_elbow',
            'r_elbow', 'f5', 'f6', 'f7', 'f8', 'uk1', 'uk2', 'uk3']
 labels = list('ABCDEFGHIJKLMNOP')
 c = np.random.randint(1, 5, size=16)
@@ -200,6 +200,7 @@ def draw_image_details(im_left, im_right, df_im_left, df_right, win):
     draw_skeleton_2D(output_right, right_xy_coord, 3, False)
     return left_xy_coord, right_xy_coord
 
+
 def draw_skeleton_2D(kpts, coords_and_label, steps, is_left):
     for sk_id, sk in enumerate(skeleton):
         r, g, b = pose_limb_color[sk_id]
@@ -209,8 +210,8 @@ def draw_skeleton_2D(kpts, coords_and_label, steps, is_left):
             pos1 = (int(kpts[(sk[0] - 1) * steps] // 2), int(kpts[(sk[0] - 1) * steps + 1]) // 2)
             pos2 = (int(kpts[(sk[1] - 1) * steps] // 2), int(kpts[(sk[1] - 1) * steps + 1]) // 2)
         else:
-            pos1 = (int(kpts[(sk[0] - 1) * steps] // 2) + (IM_WIDTH/2), int(kpts[(sk[0] - 1) * steps + 1]) // 2)
-            pos2 = (int(kpts[(sk[1] - 1) * steps] // 2) + (IM_WIDTH/2), int(kpts[(sk[1] - 1) * steps + 1]) // 2)
+            pos1 = (int(kpts[(sk[0] - 1) * steps] // 2) + (IM_WIDTH / 2), int(kpts[(sk[0] - 1) * steps + 1]) // 2)
+            pos2 = (int(kpts[(sk[1] - 1) * steps] // 2) + (IM_WIDTH / 2), int(kpts[(sk[1] - 1) * steps + 1]) // 2)
         if steps == 3:
             conf1 = kpts[(sk[0] - 1) * steps + 2]
             conf2 = kpts[(sk[1] - 1) * steps + 2]
@@ -226,8 +227,10 @@ def draw_skeleton_2D(kpts, coords_and_label, steps, is_left):
         graph.draw_line(pos1, pos2, hex_color, width=4)
         # print(f'drew line from  {pos1} to {pos2}')
         # print(f'raw pos1 {raw_pos1}')
+        # TODO: what if the label is -1
         if sk_id != -1:
             graph.draw_text(str(labels2[sk_id]), pos1, color='black')
+            # graph.Multiline(default_text=str(labels2[sk_id]), size=(30, 5), key=str(sk_id))
         print(f'coords {coords_and_label} type coords {type(coords_and_label)}')
         try:
             ind_to_add = coords_and_label.index([raw_pos1[0], raw_pos1[1]])
@@ -236,7 +239,6 @@ def draw_skeleton_2D(kpts, coords_and_label, steps, is_left):
         except:
             pass
         print(f'coords after {coords_and_label} type coords {type(coords_and_label)}')
-
 
 
 def pixel_to_world(camera_intrinsics, r, t, img_points):
@@ -319,6 +321,7 @@ def plot_keypoints_3d(lkpts, rkpts, P1, P2):
     # show origin point
     ax.scatter(0, 0, 0, c='black', s=5)
 
+
 def XYZ_coords_to_csv(left_points, right_points, P1, P2, output_path):
     df = pd.DataFrame(columns=['image_index', 'kpt_x', 'kpt_y', 'kpt_z', 'label'])
     image_num = 1
@@ -337,7 +340,7 @@ def XYZ_coords_to_csv(left_points, right_points, P1, P2, output_path):
             for p in p3ds:
                 if p[3] != -1:
                     df2 = pd.DataFrame.from_records([{'image_index': image_num, 'kpt_x': int(p[0]), 'kpt_y': int(p[1]),
-                                                  'kpt_z': int(p[2]), 'label': labels2[int(float(p[3]))]}])
+                                                      'kpt_z': int(p[2]), 'label': labels2[int(float(p[3]))]}])
                 else:
                     df2 = pd.DataFrame.from_records([{'image_index': image_num, 'kpt_x': int(p[0]), 'kpt_y': int(p[1]),
                                                       'kpt_z': int(p[2]), 'label': int(p[3])}])
@@ -356,6 +359,7 @@ def combine_labels(left_prop, right_prop):
     print(f'AFTER\nleft point: {left_prop} right point: {right_prop}')
 
     return left_prop, right_prop
+
 
 if __name__ == "__main__":
 
@@ -383,15 +387,17 @@ if __name__ == "__main__":
     imgs_right = df_right.loc[:, 'image'].drop_duplicates()
 
     sg.theme('Dark Blue 3')
-    image_viewer_column = [
-        [sg.Text("Here are the images: ")],
-        # [sg.Image(key='-IMAGE_LEFT-')],
-        # [sg.Image(key='-IMAGE_RIGHT-')]
+    controls_column = [
+        [sg.Text("Controls: ")], [sg.Button('show image', enable_events=True, key="-SHOW-"),
+        sg.Button('exit', key='-EXIT-'),
+        sg.R('Move Stuff', 1, key='-MOVE-', enable_events=True), sg.InputText('Select a label to edit', key='-LABEL-')]
     ]
+    labels_column = [[sg.Text(f'{i}. ', key=f'txt{i}', size=(10,1)), sg.Multiline(f"{i} txt", key=f'input{i}', size=(20,1)),
+                      sg.Text(f'{i+1}. ', key=f'txt{i+1}', size=(10,1)), sg.Multiline(f"{i+1} txt", key=f'input{i+1}', size=(20,1))] for i in range(1, 16, 2)]
     layout = [
         [sg.Text(key='-INFO-', size=(60, 1))],
         [sg.Graph(
-            canvas_size=(IM_WIDTH, IM_HEIGHT),
+            canvas_size=(IM_WIDTH, IM_HEIGHT//2),
             graph_bottom_left=(0, IM_HEIGHT),
             graph_top_right=(IM_WIDTH, 0),
             key="-GRAPH-",
@@ -399,12 +405,13 @@ if __name__ == "__main__":
             enable_events=True,
             drag_submits=True
         )],
-        # [sg.Column(image_viewer_column)],
-        [sg.Button('show image', enable_events=True, key="-SHOW-")],
-        [sg.Button('exit', key='-EXIT-')],
-        [sg.R('Move Stuff', 1, key='-MOVE-', enable_events=True)]
+        [sg.Column(labels_column)],
+        [sg.Column(controls_column)],
+
 
     ]
+
+
     window = sg.Window(title='Keypoint Editor', layout=layout, size=(1080, 720),
                        element_padding=5, location=(0, 0))
 
@@ -412,6 +419,7 @@ if __name__ == "__main__":
     itr_right = 0
 
     window.finalize()
+    # window.maximize()
     graph = window['-GRAPH-']
     dragging = False
     start_point = end_point = prior_rect = None
@@ -434,6 +442,7 @@ if __name__ == "__main__":
                 dragging = True
                 drag_figures = graph.get_figures_at_location((x, y))
                 drag_figures = tuple([d for d in drag_figures if d != 1 if d != 2])
+                # window['-LABEL-'].update(value=drag_figures[0])
                 for d in drag_figures:
                     print(f'figure {d}')
                 lastxy = x, y
@@ -457,7 +466,7 @@ if __name__ == "__main__":
         if event == '-SHOW-':
             if (itr_left and itr_right) < len(imgs_left):
                 lfp, rfp = draw_image_details(imgs_left.iloc[itr_left], imgs_right.iloc[itr_right], df_left, df_right,
-                                         window)
+                                              window)
                 left_camera_points.append(lfp)
                 right_camera_points.append(rfp)
                 # combine_labels(left_camera_points, right_camera_points)
