@@ -207,11 +207,11 @@ def draw_skeleton_2D(kpts, coords_and_label, steps, is_left):
         raw_pos1 = (int(kpts[(sk[0] - 1) * steps]), int(kpts[(sk[0] - 1) * steps + 1]))
         raw_pos2 = (int(kpts[(sk[1] - 1) * steps]), int(kpts[(sk[1] - 1) * steps + 1]))
         if is_left:
-            pos1 = (int(kpts[(sk[0] - 1) * steps] // 2), int(kpts[(sk[0] - 1) * steps + 1]) // 2)
-            pos2 = (int(kpts[(sk[1] - 1) * steps] // 2), int(kpts[(sk[1] - 1) * steps + 1]) // 2)
+            pos1 = (int(kpts[(sk[0] - 1) * steps] // 2), int(kpts[(sk[0] - 1) * steps + 1]))
+            pos2 = (int(kpts[(sk[1] - 1) * steps] // 2), int(kpts[(sk[1] - 1) * steps + 1]))
         else:
-            pos1 = (int(kpts[(sk[0] - 1) * steps] // 2) + (IM_WIDTH / 2), int(kpts[(sk[0] - 1) * steps + 1]) // 2)
-            pos2 = (int(kpts[(sk[1] - 1) * steps] // 2) + (IM_WIDTH / 2), int(kpts[(sk[1] - 1) * steps + 1]) // 2)
+            pos1 = (int(kpts[(sk[0] - 1) * steps] // 2) + (IM_WIDTH / 2), int(kpts[(sk[0] - 1) * steps + 1]))
+            pos2 = (int(kpts[(sk[1] - 1) * steps] // 2) + (IM_WIDTH / 2), int(kpts[(sk[1] - 1) * steps + 1]))
         if steps == 3:
             conf1 = kpts[(sk[0] - 1) * steps + 2]
             conf2 = kpts[(sk[1] - 1) * steps + 2]
@@ -419,7 +419,7 @@ if __name__ == "__main__":
     itr_right = 0
 
     window.finalize()
-    # window.maximize()
+    window.maximize()
     graph = window['-GRAPH-']
     dragging = False
     start_point = end_point = prior_rect = None
