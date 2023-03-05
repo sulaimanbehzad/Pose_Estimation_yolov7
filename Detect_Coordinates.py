@@ -20,8 +20,8 @@ param_path = 'data/out/parameters.npz'
 # you can import them to a dictionary and access the parameters
 params = dict(np.load(param_path))
 print(params.keys())
-labels2 = ['l_ankle', 'l_knee', 'r_ankle', 'r_knee', 'mid1', 'f1', 'f2', 'f3', 'l_shoulder', 'r_shoulder', 'l_elbow',
-           'r_elbow', 'f5', 'f6', 'f7', 'f8', 'uk1', 'uk2', 'uk3']
+labels2 = ['l_ankle', 'l_knee', 'r_ankle', 'r_knee', 'mid1', 'l_shoulder', 'r_shoulder', 'uk1', 'l_shoulder', 'r_shoulder', 'l_elbow',
+           'r_elbow', 'r_eye', 'l_eye', 'uk4', 'uk5', 'f1', 'uk2', 'f2']
 labels = list('ABCDEFGHIJKLMNOP')
 c = np.random.randint(1, 5, size=16)
 
@@ -189,26 +189,34 @@ def draw_image_details(im_left, im_right, df_im_left, df_right, win):
                 if conf < 0.5:
                     continue
         right_xy_coord.append([int(x_coord), int(y_coord)])
-
-    for i in range(1, 16):
-        point = point_to_gui_coordinate(left_xy_coord[i-1], True)
-        window[f'txt{i}'].update(str(point))
     draw_skeleton_2D(output_left, left_xy_coord, 3, True)
     draw_skeleton_2D(output_right, right_xy_coord, 3, False)
     for cpl, cpr in zip(left_xy_coord, right_xy_coord):
         print(f'cpl: {cpl} - cpr: {cpr}')
         graph.draw_circle(center_location=point_to_gui_coordinate(cpl, True), radius=4, fill_color='yellow', line_color='red')
         graph.draw_circle(center_location=point_to_gui_coordinate(cpr, False), radius=4, fill_color='yellow', line_color='red')
+    for i in range(1, 17):
+        point = point_to_gui_coordinate(left_xy_coord[i-1], True)
+        window[f'txt{i}'].update(str(point))
+        if len(point) == 3:
+            label = point[2]
+            window[f'input{i}'].update(label)
+
     return left_xy_coord, right_xy_coord
 
 def point_to_gui_coordinate(point, is_left):
-    ret_point = [-1, -1]
+    if len(point) == 3:
+        ret_point = [-1, -1, -1]
+    else:
+        ret_point = [-1, -1]
     if is_left:
         ret_point[0] = point[0] / 2
     else:
         ret_point[0] = point[0]/2
         ret_point[0] += IM_WIDTH/2
     ret_point[1] = point[1]
+    if len(point) == 3:
+        ret_point[2] = point[2]
     return ret_point
 
 
@@ -239,14 +247,12 @@ def draw_skeleton_2D(kpts, coords_and_label, steps, is_left):
         # print(f'drew line from  {pos1} to {pos2}')
         # print(f'raw pos1 {raw_pos1}')
         # TODO: what if the label is -1
-        if sk_id != -1:
-            graph.draw_text(str(labels2[sk_id]), pos1, color='black')
-            # graph.Multiline(default_text=str(labels2[sk_id]), size=(30, 5), key=str(sk_id))
+        # if sk_id != -1:
+        graph.draw_text(str(labels2[sk_id]), pos1, color='black')
         print(f'coords {coords_and_label} type coords {type(coords_and_label)}')
         try:
             ind_to_add = coords_and_label.index([raw_pos1[0], raw_pos1[1]])
-            # print(f'{ind_to_add}')
-            coords_and_label[ind_to_add].append(sk_id)
+            coords_and_label[ind_to_add].append(str(labels2[sk_id]))
         except:
             pass
         print(f'coords after {coords_and_label} type coords {type(coords_and_label)}')
@@ -350,11 +356,11 @@ def XYZ_coords_to_csv(left_points, right_points, P1, P2, output_path):
             p3ds = np.array(p3ds)
             for p in p3ds:
                 if p[3] != -1:
-                    df2 = pd.DataFrame.from_records([{'image_index': image_num, 'kpt_x': int(p[0]), 'kpt_y': int(p[1]),
-                                                      'kpt_z': int(p[2]), 'label': labels2[int(float(p[3]))]}])
+                    df2 = pd.DataFrame.from_records([{'image_index': image_num, 'kpt_x': p[0], 'kpt_y': p[1],
+                                                      'kpt_z': p[2], 'label': p[3]}])
                 else:
-                    df2 = pd.DataFrame.from_records([{'image_index': image_num, 'kpt_x': int(p[0]), 'kpt_y': int(p[1]),
-                                                      'kpt_z': int(p[2]), 'label': int(p[3])}])
+                    df2 = pd.DataFrame.from_records([{'image_index': image_num, 'kpt_x': p[0], 'kpt_y': p[1],
+                                                      'kpt_z': p[2], 'label': p[3]}])
                 df = pd.concat([df, df2])
         image_num += 1
     df.to_csv(output_path, mode='w+', index=False)
@@ -399,12 +405,12 @@ if __name__ == "__main__":
 
     sg.theme('Dark Blue 3')
     controls_column = [
-        [sg.Text("Controls: ")], [sg.Button('show image', enable_events=True, key="-SHOW-"),
-        sg.Button('exit', key='-EXIT-'),
-        sg.R('Move Stuff', 1, key='-MOVE-', enable_events=True), sg.InputText('Select a label to edit', key='-LABEL-')]
+        [sg.Text("Controls: ")], [sg.Button('Next Image', enable_events=True, key="-SHOW-"),
+        sg.Button('Exit', key='-EXIT-'),
+        sg.R('Move Stuff', 1, key='-MOVE-', enable_events=True), sg.Button('Update Labels', enable_events=True, key='-UPDATE-')]
     ]
-    labels_column = [[sg.Text(f'{i}. ', key=f'txt{i}', size=(10,1)), sg.Multiline(f"{i} txt", key=f'input{i}', size=(20,1)),
-                      sg.Text(f'{i+1}. ', key=f'txt{i+1}', size=(10,1)), sg.Multiline(f"{i+1} txt", key=f'input{i+1}', size=(20,1))] for i in range(1, 16, 2)]
+    labels_column = [[sg.Text(f'{i}. ', key=f'txt{i}', size=(15,1)), sg.Multiline(f"{i} txt", key=f'input{i}', size=(20,1)),
+                      sg.Text(f'{i+1}. ', key=f'txt{i+1}', size=(15,1)), sg.Multiline(f"{i+1} txt", key=f'input{i+1}', size=(20,1))] for i in range(1, 16, 2)]
     layout = [
         [sg.Text(key='-INFO-', size=(60, 1))],
         [sg.Graph(
@@ -478,6 +484,15 @@ if __name__ == "__main__":
             if (itr_left and itr_right) < len(imgs_left):
                 lfp, rfp = draw_image_details(imgs_left.iloc[itr_left], imgs_right.iloc[itr_right], df_left, df_right,
                                               window)
+                print(f'before label update {lfp}')
+                event, values = window.read()
+                for idx, elem in enumerate(lfp):
+                    if len(elem) < 3:
+                        lbl = values[f'input{idx+1}']
+                        print(f'label {lbl}')
+                        elem.append(lbl)
+                print(f'after label update {lfp}')
+
                 left_camera_points.append(lfp)
                 right_camera_points.append(rfp)
                 # combine_labels(left_camera_points, right_camera_points)
@@ -487,7 +502,7 @@ if __name__ == "__main__":
     # print(left_camera_points)
     XYZ_coords_to_csv(left_camera_points, right_camera_points, projection_matrix_1, projection_matrix_2,
                       'data/out/XYZ_Coords.csv')
-    plot_keypoints_3d(left_camera_points[1], right_camera_points[1], projection_matrix_1, projection_matrix_2)
+    # plot_keypoints_3d(left_camera_points[1], right_camera_points[1], projection_matrix_1, projection_matrix_2)
     plt.show()
     plt.waitforbuttonpress()
     window.close()
