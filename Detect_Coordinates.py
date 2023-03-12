@@ -246,7 +246,6 @@ def draw_skeleton_2D(kpts, coords_and_label, steps, is_left):
         graph.draw_line(pos1, pos2, hex_color, width=4)
         # print(f'drew line from  {pos1} to {pos2}')
         # print(f'raw pos1 {raw_pos1}')
-        # TODO: what if the label is -1
         # if sk_id != -1:
         graph.draw_text(str(labels2[sk_id]), pos1, color='black')
         print(f'coords {coords_and_label} type coords {type(coords_and_label)}')
@@ -315,22 +314,32 @@ def plot_keypoints_3d(lkpts, rkpts, P1, P2):
         # p3ds = np.array(p3ds)
     # print(f'len p3ds {len(p3ds)}')
     p3ds = np.reshape(p3ds, (16, 4))
+    # min_thresh = np.inf
+    # max_thresh = (-1) * np.inf
+    # print(f' min {min_thresh}, max{max_thresh}')
     # for p in p3ds:
-    #     print(f'3d {p}')
+    #     cur_point = p[0].astype(float)
+    #     print(f'3d {p}:\n {p[0]}, {p[1]}, {p[2]} \n cur {cur_point}')
+    #     if cur_point < min_thresh:
+    #         min_thresh = cur_point
+    #     if cur_point > max_thresh:
+    #         max_thresh = cur_point
+
 
     from mpl_toolkits.mplot3d import Axes3D
 
     # min_thresh = np.min(p3ds)
     # max_thresh = np.max(p3ds)
+    thresh_points = p3ds[:2]
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
-    ax.set_xlim3d(np.min(p3ds[0]), np.max(p3ds[0]))
-    ax.set_ylim3d(np.min(p3ds[1]), np.max(p3ds[1]))
-    ax.set_zlim3d(np.min(p3ds[2]), np.max(p3ds[2]))
+    # ax.set_xlim3d(min_thresh, max_thresh)
+    # ax.set_ylim3d(min_thresh, max_thresh)
+    # ax.set_zlim3d(min_thresh, max_thresh)
     prev_p = []
-    for p, l in zip(p3ds, lkpts):
-        ax.scatter(xs=p[0], ys=p[1], zs=p[2], c='red', s=3)
-        ax.text(p[0], p[1], p[2], (str(labels2[int(p[3])])), size=5, zorder=1, color='k')
+    for p in p3ds:
+        ax.scatter(xs=p[0].astype(float), ys=p[1].astype(float), zs=p[2].astype(float), c='red', s=3)
+        ax.text(p[0].astype(float), p[1].astype(float), p[2].astype(float), p[3], size=5, zorder=1, color='k')
 
         # if len(prev_p) > 0:
         #     ax.plot([prev_p[0], p[0]], [prev_p[1], p[1]], [prev_p[2], p[2]], color='black')
@@ -502,7 +511,7 @@ if __name__ == "__main__":
     # print(left_camera_points)
     XYZ_coords_to_csv(left_camera_points, right_camera_points, projection_matrix_1, projection_matrix_2,
                       'data/out/XYZ_Coords.csv')
-    # plot_keypoints_3d(left_camera_points[1], right_camera_points[1], projection_matrix_1, projection_matrix_2)
+    plot_keypoints_3d(left_camera_points[1], right_camera_points[1], projection_matrix_1, projection_matrix_2)
     plt.show()
     plt.waitforbuttonpress()
     window.close()
