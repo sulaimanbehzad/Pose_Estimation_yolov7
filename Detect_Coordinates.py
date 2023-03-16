@@ -420,6 +420,16 @@ if __name__ == "__main__":
     ]
     labels_column = [[sg.Text(f'{i}. ', key=f'txt{i}', size=(15,1)), sg.Multiline(f"{i} txt", key=f'input{i}', size=(20,1)),
                       sg.Text(f'{i+1}. ', key=f'txt{i+1}', size=(15,1)), sg.Multiline(f"{i+1} txt", key=f'input{i+1}', size=(20,1))] for i in range(1, 16, 2)]
+    add_new_points_column = [
+        [sg.Text('For left Palm')],
+        [sg.Text('Coordinates in LEFT Pic'), sg.Multiline('X', key='l_x_1'), sg.Multiline('Y', key='l_y_1')],
+        [sg.Text('Coordinates in RIGHT Pic'), sg.Multiline('X', key='r_x_1'), sg.Multiline('Y', key='r_y_1')],
+        [sg.Text('Label'), sg.Multiline('l_palm', key='new_point_label_1')],
+        [sg.Text('For right Palm')],
+        [sg.Text('Coordinates in LEFT Pic'), sg.Multiline('X', key='l_x_2'), sg.Multiline('Y', key='l_y_2')],
+        [sg.Text('Coordinates in RIGHT Pic'), sg.Multiline('X', key='r_x_2'), sg.Multiline('Y', key='r_y_2')],
+        [sg.Text('Label'), sg.Multiline('r_palm', key='new_point_label_2')],
+        ]
     layout = [
         [sg.Text(key='-INFO-', size=(60, 1))],
         [sg.Graph(
@@ -431,19 +441,17 @@ if __name__ == "__main__":
             enable_events=True,
             drag_submits=True
         )],
-        [sg.Column(labels_column)],
+        [sg.Column(labels_column), sg.Column(add_new_points_column)],
         [sg.Column(controls_column)],
 
 
     ]
-
 
     window = sg.Window(title='Keypoint Editor', layout=layout, size=(1080, 720),
                        element_padding=5, location=(0, 0))
 
     itr_left = 0
     itr_right = 0
-
     window.finalize()
     window.maximize()
     graph = window['-GRAPH-']
@@ -500,11 +508,14 @@ if __name__ == "__main__":
                         lbl = values[f'input{idx+1}']
                         print(f'label {lbl}')
                         elem.append(lbl)
-                print(f'after label update {lfp}')
-
+                if event == '-UPDATE-':
+                    lfp.append([int(values['l_x_1']), int(values['l_y_1']), values['new_point_label_1']])
+                    lfp.append([int(values['l_x_2']), int(values['l_y_2']), values['new_point_label_2']])
+                    print(f'after label update {lfp}')
+                    lfp.append([int(values['r_x_1']), int(values['r_y_1']), values['new_point_label_1']])
+                    lfp.append([int(values['r_x_2']), int(values['r_y_2']), values['new_point_label_2']])
                 left_camera_points.append(lfp)
                 right_camera_points.append(rfp)
-                # combine_labels(left_camera_points, right_camera_points)
                 itr_left += 1
                 itr_right += 1
     # print(f'size lfps: {len(left_camera_points)}')
