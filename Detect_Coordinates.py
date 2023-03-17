@@ -186,17 +186,19 @@ def draw_image_details(im_left, im_right, df_im_left, df_right, win):
         if not (x_coord % 640 == 0 or y_coord % 640 == 0):
             if steps == 3:
                 conf = output_right[steps * kid + 2]
-                if conf < 0.5:
+                if conf < 0.4:
                     continue
         right_xy_coord.append([int(x_coord), int(y_coord)])
     draw_skeleton_2D(output_left, left_xy_coord, 3, True)
     draw_skeleton_2D(output_right, right_xy_coord, 3, False)
     for cpl, cpr in zip(left_xy_coord, right_xy_coord):
         print(f'cpl: {cpl} - cpr: {cpr}')
-        graph.draw_circle(center_location=point_to_gui_coordinate(cpl, True), radius=4, fill_color='yellow', line_color='red')
-        graph.draw_circle(center_location=point_to_gui_coordinate(cpr, False), radius=4, fill_color='yellow', line_color='red')
+        graph.draw_circle(center_location=pixel_to_gui_coordinate(cpl, True), radius=4, fill_color='yellow',
+                          line_color='red')
+        graph.draw_circle(center_location=pixel_to_gui_coordinate(cpr, False), radius=4, fill_color='yellow',
+                          line_color='red')
     for i in range(1, 17):
-        point = point_to_gui_coordinate(left_xy_coord[i-1], True)
+        point = pixel_to_gui_coordinate(left_xy_coord[i - 1], True)
         window[f'txt{i}'].update(str(point))
         if len(point) == 3:
             label = point[2]
@@ -364,11 +366,7 @@ def XYZ_coords_to_csv(left_points, right_points, P1, P2, output_path):
             p3ds.append(_p3d)
             p3ds = np.array(p3ds)
             for p in p3ds:
-                if p[3] != -1:
-                    df2 = pd.DataFrame.from_records([{'image_index': image_num, 'kpt_x': p[0], 'kpt_y': p[1],
-                                                      'kpt_z': p[2], 'label': p[3]}])
-                else:
-                    df2 = pd.DataFrame.from_records([{'image_index': image_num, 'kpt_x': p[0], 'kpt_y': p[1],
+                df2 = pd.DataFrame.from_records([{'image_index': image_num, 'kpt_x': p[0], 'kpt_y': p[1],
                                                       'kpt_z': p[2], 'label': p[3]}])
                 df = pd.concat([df, df2])
         image_num += 1
