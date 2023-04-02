@@ -11,8 +11,8 @@ import codecs
 
 IM_HEIGHT = 576
 IM_WIDTH = 1024
-left_kpts = 'data/out/keypoint_left.csv'
-right_kpts = 'data/out/keypoint_right.csv'
+left_kpts = 'data/out/keypoint_left_06.csv'
+right_kpts = 'data/out/keypoint_right_06.csv'
 file = 'data/out/parameters.npz'
 # in the dataset I have stored an example parameters file
 param_path = 'data/out/parameters.npz'
@@ -174,31 +174,31 @@ def draw_image_details(im_left, im_right, df_im_left, df_right, win):
     num_kpts = len(output_left) // steps
     for kid in range(num_kpts):
         x_coord, y_coord = output_left[steps * kid], output_left[steps * kid + 1]
-        if not (x_coord % 640 == 0 or y_coord % 640 == 0):
-            if steps == 3:
-                conf = output_left[steps * kid + 2]
-                if conf < 0.5:
-                    continue
+        # if not (x_coord % 640 == 0 or y_coord % 640 == 0):
+        #     if steps == 3:
+        #         conf = output_left[steps * kid + 2]
+        #         if conf < 0.5:
+        #             continue
         left_xy_coord.append([int(x_coord), int(y_coord)])
 
     num_kpts = len(output_right) // steps
     for kid in range(num_kpts):
         x_coord, y_coord = output_right[steps * kid], output_right[steps * kid + 1]
-        if not (x_coord % 640 == 0 or y_coord % 640 == 0):
-            if steps == 3:
-                conf = output_right[steps * kid + 2]
-                if conf < 0.4:
-                    continue
+        # if not (x_coord % 640 == 0 or y_coord % 640 == 0):
+        #     if steps == 3:
+        #         conf = output_right[steps * kid + 2]
+        #         if conf < 0.5:
+        #             continue
         right_xy_coord.append([int(x_coord), int(y_coord)])
     draw_skeleton_2D(output_left, left_xy_coord, 3, True)
     draw_skeleton_2D(output_right, right_xy_coord, 3, False)
     for cpl, cpr in zip(left_xy_coord, right_xy_coord):
         print(f'cpl: {cpl} - cpr: {cpr}')
-        graph.draw_circle(center_location=pixel_to_gui_coordinate(cpl, True), radius=4, fill_color='yellow',
+        graph.draw_circle(center_location=pixel_to_gui_coordinate(cpl, True), radius=3, fill_color='yellow',
                           line_color='red')
-        graph.draw_circle(center_location=pixel_to_gui_coordinate(cpr, False), radius=4, fill_color='yellow',
+        graph.draw_circle(center_location=pixel_to_gui_coordinate(cpr, False), radius=3, fill_color='yellow',
                           line_color='red')
-    for i in range(1, 17):
+    for i in range(1, 18):
         point = pixel_to_gui_coordinate(left_xy_coord[i - 1], True)
         window[f'txt{i}'].update(str(point))
         if len(point) == 3:
@@ -437,7 +437,7 @@ if __name__ == "__main__":
     labels_column = [
         [sg.Text(f'{i}. ', key=f'txt{i}', size=(15, 1)), sg.Multiline(f"{i} txt", key=f'input{i}', size=(20, 1)),
          sg.Text(f'{i + 1}. ', key=f'txt{i + 1}', size=(15, 1)),
-         sg.Multiline(f"{i + 1} txt", key=f'input{i + 1}', size=(20, 1))] for i in range(1, 16, 2)]
+         sg.Multiline(f"{i + 1} txt", key=f'input{i + 1}', size=(20, 1))] for i in range(1, 18, 2)]
     add_new_points_column = [
         [sg.Text('For left Palm')],
         [sg.Text('Coordinates in LEFT Pic'), sg.Multiline('1', key='l_x_1'), sg.Multiline('2', key='l_y_1')],
@@ -515,6 +515,7 @@ if __name__ == "__main__":
             dragging = False
             prior_rect = None
         if event == '-SHOW-':
+            print('clicked Next Image')
             if (itr_left and itr_right) < len(imgs_left):
                 lfp, rfp = draw_image_details(imgs_left.iloc[itr_left], imgs_right.iloc[itr_right], df_left, df_right,
                                               window)
@@ -530,8 +531,10 @@ if __name__ == "__main__":
                     lfp.append([int(values['l_x_2']), int(values['l_y_2']), values['new_point_label_2']])
                     print(f'after label update {lfp}')
                     print(f'RFP: before label update {rfp}')
-                    rfp.append([int(values['r_x_1']), int(values['r_y_1']), values['new_point_label_1']])
-                    rfp.append([int(values['r_x_2']), int(values['r_y_2']), values['new_point_label_2']])
+                    transformed1 = (int(values['r_x_1']) * 2) - IM_WIDTH
+                    transformed2 = (int(values['r_x_2']) * 2) - IM_WIDTH
+                    rfp.append([transformed1, int(values['r_y_1']), values['new_point_label_1']])
+                    rfp.append([transformed2, int(values['r_y_2']), values['new_point_label_2']])
                     print(f'RFP: after label update {rfp}')
                 print(f'single image\nleft point {len(lfp)} \n right point {len(rfp)}')
                 left_camera_points.append(lfp)
@@ -541,8 +544,8 @@ if __name__ == "__main__":
     # print(f'size lfps: {len(left_camera_points)}')
     print(f'shape left point {len(left_camera_points)} \n right point {len(right_camera_points)}')
     XYZ_coords_to_csv(left_camera_points, right_camera_points, projection_matrix_1, projection_matrix_2,
-                      'data/out/XYZ_Coords.csv')
-    plot_keypoints_3d(left_camera_points[1], right_camera_points[1], projection_matrix_1, projection_matrix_2)
+                      'data/out/XYZ_Coords_06.csv')
+    plot_keypoints_3d(left_camera_points[2], right_camera_points[2], projection_matrix_1, projection_matrix_2)
     plt.show()
     plt.waitforbuttonpress()
     window.close()

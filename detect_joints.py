@@ -286,10 +286,10 @@ def save_raw_output(imgs_path, out_path, orig_shape=None):
     df.to_csv(out_path, mode='w+', index=False)
 
 
-left_imgs_path = 'data/pose_imgs/Pose4/leftcamera'
-right_imgs_path = 'data/pose_imgs/Pose4/rightcamera'
-output_left_keypoints = 'data/out/keypoint_left.csv'
-output_right_keypoints = 'data/out/keypoint_right.csv'
+left_imgs_path = 'data/pose_imgs/Pose6/leftcamera'
+right_imgs_path = 'data/pose_imgs/Pose6/rightcamera'
+output_left_keypoints = 'data/out/keypoint_left_06.csv'
+output_right_keypoints = 'data/out/keypoint_right_06.csv'
 
 print('We have {} Images from the left camera'.format(len(os.listdir(left_imgs_path))))
 print('and {} Images from the right camera.'.format(len(os.listdir(right_imgs_path))))
