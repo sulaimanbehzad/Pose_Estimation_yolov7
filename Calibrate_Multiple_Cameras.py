@@ -14,7 +14,8 @@ print(cv2.__version__)
 # New Grid 10 * 4
 # New Grid 10 * 6
 # New Grid 8 * 4
-BOARD_SIZE = (8, 4)
+# New Grid 9 * 3
+BOARD_SIZE = (4, 8)
 
 IM_HEIGHT = 576
 IM_WIDTH = 1024
@@ -22,8 +23,8 @@ IM_WIDTH = 1024
 SQUARE_SIZE = 12.5
 
 # Images directory for loading
-LEFT_PATH = 'data/calib_imgs3/leftcamera'
-RIGHT_PATH = 'data/calib_imgs3/rightcamera'
+LEFT_PATH = 'data/calib_imgs5/leftcamera'
+RIGHT_PATH = 'data/calib_imgs5/rightcamera'
 
 print('We have {} Images from the left camera'.format(len(os.listdir(LEFT_PATH))))
 print('and {} Images from the right camera.'.format(len(os.listdir(RIGHT_PATH))))
@@ -260,18 +261,18 @@ if __name__ == "__main__":
         ax.imshow(im)
         ax.axis('off')
 
-    n = 0
+    n = 2
     img = cv2.imread(Left_Paths[n])
     img = cv2.resize(img, (IM_WIDTH, IM_HEIGHT))
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     # cv2.imshow('ex', img)
-    img = PlotLocalCoordinates(img, Left_imgpoints[n])
+    # img = PlotLocalCoordinates(img, Left_imgpoints[n])
 
     fig = plt.figure(figsize=(10, 10))
     plt.imshow(img)
     plt.axis('off')
     plt.show(block=False)
-    plt.pause(3)
+    plt.pause(30)
     plt.close()
 
     # Camera Calibration
