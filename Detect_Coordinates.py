@@ -464,7 +464,7 @@ if __name__ == "__main__":
 
     ]
 
-    window = sg.Window(title='Keypoint Editor', layout=layout, size=(1080, 720),
+    window = sg.Window(title='Keypoint Editor', layout=layout, size=(1080, 720), element_justification='c',
                        element_padding=5, location=(0, 0), background_color='#1b1c30', resizable=True)
 
     itr_left = 0
