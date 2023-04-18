@@ -427,45 +427,45 @@ if __name__ == "__main__":
     imgs_left = df_left.loc[:, 'image'].drop_duplicates()
     imgs_right = df_right.loc[:, 'image'].drop_duplicates()
 
-    sg.theme('Dark Blue 3')
+    sg.theme('Dark Blue 2')
     controls_column = [
         [sg.Text("Controls: ")], [sg.Button('Next Image', enable_events=True, key="-SHOW-"),
                                   sg.Button('Exit', key='-EXIT-'),
-                                  sg.R('Move Stuff', 1, key='-MOVE-', enable_events=True),
+                                  sg.R('Move Stuff', 1, key='-MOVE-', enable_events=True, background_color='#26273b'),
                                   sg.Button('Update Labels', enable_events=True, key='-UPDATE-')]
     ]
     labels_column = [
         [sg.Text(f'{i}. ', key=f'txt{i}', size=(15, 1)), sg.Multiline(f"{i} txt", key=f'input{i}', size=(20, 1)),
          sg.Text(f'{i + 1}. ', key=f'txt{i + 1}', size=(15, 1)),
          sg.Multiline(f"{i + 1} txt", key=f'input{i + 1}', size=(20, 1))] for i in range(1, 18, 2)]
-    add_new_points_column = [
-        [sg.Text('For left Palm')],
-        [sg.Text('Coordinates in LEFT Pic'), sg.Multiline('1', key='l_x_1'), sg.Multiline('2', key='l_y_1')],
-        [sg.Text('Coordinates in RIGHT Pic'), sg.Multiline('3', key='r_x_1'), sg.Multiline('4', key='r_y_1')],
-        [sg.Text('Label'), sg.Multiline('l_palm', key='new_point_label_1')],
-        [sg.Text('For right Palm')],
-        [sg.Text('Coordinates in LEFT Pic'), sg.Multiline('5', key='l_x_2'), sg.Multiline('6', key='l_y_2')],
-        [sg.Text('Coordinates in RIGHT Pic'), sg.Multiline('7', key='r_x_2'), sg.Multiline('8', key='r_y_2')],
-        [sg.Text('Label'), sg.Multiline('r_palm', key='new_point_label_2')],
-    ]
+    # add_new_points_column = [
+    #     [sg.Text('For left Palm')],
+    #     [sg.Text('Coordinates in LEFT Pic'), sg.Multiline('1', key='l_x_1'), sg.Multiline('2', key='l_y_1')],
+    #     [sg.Text('Coordinates in RIGHT Pic'), sg.Multiline('3', key='r_x_1'), sg.Multiline('4', key='r_y_1')],
+    #     [sg.Text('Label'), sg.Multiline('l_palm', key='new_point_label_1')],
+    #     [sg.Text('For right Palm')],
+    #     [sg.Text('Coordinates in LEFT Pic'), sg.Multiline('5', key='l_x_2'), sg.Multiline('6', key='l_y_2')],
+    #     [sg.Text('Coordinates in RIGHT Pic'), sg.Multiline('7', key='r_x_2'), sg.Multiline('8', key='r_y_2')],
+    #     [sg.Text('Label'), sg.Multiline('r_palm', key='new_point_label_2')],
+    # ]
     layout = [
-        [sg.Text(key='-INFO-', size=(60, 1))],
+        [sg.Text(key='-INFO-', size=(60, 1), background_color='#26273b')],
         [sg.Graph(
             canvas_size=(IM_WIDTH, IM_HEIGHT // 2),
             graph_bottom_left=(0, IM_HEIGHT),
             graph_top_right=(IM_WIDTH, 0),
             key="-GRAPH-",
-            background_color='lightblue',
+            background_color='#26273b',
             enable_events=True,
             drag_submits=True
         )],
-        [sg.Column(labels_column), sg.Column(add_new_points_column)],
-        [sg.Column(controls_column)],
+        [sg.Column(labels_column, background_color='#26273b', scrollable=True)],
+        [sg.Column(controls_column, background_color='#26273b')],
 
     ]
 
     window = sg.Window(title='Keypoint Editor', layout=layout, size=(1080, 720),
-                       element_padding=5, location=(0, 0))
+                       element_padding=5, location=(0, 0), background_color='#1b1c30', resizable=True)
 
     itr_left = 0
     itr_right = 0
