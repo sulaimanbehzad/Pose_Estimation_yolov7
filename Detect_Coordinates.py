@@ -459,7 +459,7 @@ if __name__ == "__main__":
             enable_events=True,
             drag_submits=True
         )],
-        [sg.Column(labels_column, background_color='#26273b', scrollable=True)],
+        [sg.Column(labels_column, background_color='#26273b', scrollable=True, size=(IM_WIDTH, IM_HEIGHT/2))],
         [sg.Column(controls_column, background_color='#26273b')],
 
     ]
@@ -470,7 +470,7 @@ if __name__ == "__main__":
     itr_left = 0
     itr_right = 0
     window.finalize()
-    window.maximize()
+    # window.maximize()
     graph = window['-GRAPH-']
     dragging = False
     start_point = end_point = prior_rect = None
