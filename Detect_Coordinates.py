@@ -431,7 +431,7 @@ if __name__ == "__main__":
     controls_column = [
         [sg.Text("Controls: ")], [sg.Button('Previous Image', enable_events=True, key="-PREV-"),
                                   sg.Button('Next Image', enable_events=True, key="-NEXT-"),
-                                  sg.Button('Exit', key='-EXIT-'),
+                                  sg.Button('Save & Exit', key='-EXIT-'),
                                   # sg.R('Move Stuff', 1, key='-MOVE-', enable_events=True, background_color='#26273b'),
                                   # sg.Button('Update Labels', enable_events=True, key='-UPDATE-')
                                   ]
@@ -545,6 +545,11 @@ if __name__ == "__main__":
                 itr_right += 1
         if event == '-PREV-':
             window["-INFO-"].update('Showing Previous Image')
+            if (itr_left and itr_right) >= 1:
+                lfp, rfp = draw_image_details(imgs_left.iloc[itr_left], imgs_right.iloc[itr_right], df_left, df_right,
+                                              window)
+                itr_left -= 1
+                itr_right -= 1
     # print(f'size lfps: {len(left_camera_points)}')
     print(f'shape left point {len(left_camera_points)} \n right point {len(right_camera_points)}')
     XYZ_coords_to_csv(left_camera_points, right_camera_points, projection_matrix_1, projection_matrix_2,
