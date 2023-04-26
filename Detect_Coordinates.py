@@ -402,6 +402,17 @@ def combine_labels(left_prop, right_prop):
     return left_prop, right_prop
 
 
+def open_window():
+    layout = [[sg.Text("New Window", key="new")]]
+    window = sg.Window("Second Window", layout, modal=True)
+    choice = None
+    while True:
+        event, values = window.read()
+        if event == "Exit" or event == sg.WIN_CLOSED:
+            break
+
+    window.close()
+
 if __name__ == "__main__":
 
     left_camera_points = []
@@ -428,8 +439,12 @@ if __name__ == "__main__":
     imgs_right = df_right.loc[:, 'image'].drop_duplicates()
 
     sg.theme('Dark Blue 2')
+    calibration_column = [
+        [sg.Text("Calibration and Detection")], [sg.Button('Calibration and Detection', enable_events=True, key="-CALIB-")]
+    ]
     controls_column = [
-        [sg.Text("Controls: ")], [sg.Button('Previous Image', enable_events=True, key="-PREV-"),
+        [sg.Text("Controls: ")], [
+                                  sg.Button('Previous Image', enable_events=True, key="-PREV-"),
                                   sg.Button('Next Image', enable_events=True, key="-NEXT-"),
                                   sg.Button('Save & Exit', key='-EXIT-'),
                                   # sg.R('Move Stuff', 1, key='-MOVE-', enable_events=True, background_color='#26273b'),
@@ -437,8 +452,8 @@ if __name__ == "__main__":
                                   ]
     ]
     labels_column = [
-        [sg.Text(f'{i}. ', key=f'txt{i}', size=(15, 1)), sg.Input(f"{i} txt", key=f'input{i}', size=(15, 1)),
-         sg.Text(f'{i + 1}. ', key=f'txt{i + 1}', size=(15, 1)),
+        [sg.Text(f'{i}. ', key=f'txt{i}', enable_events=True,size=(15, 1)), sg.Input(f"{i} txt", key=f'input{i}', size=(15, 1)),
+         sg.Text(f'{i + 1}. ', key=f'txt{i + 1}', enable_events=True, size=(15, 1)),
          sg.Input(f"{i + 1} txt", key=f'input{i + 1}', size=(15, 1))] for i in range(1, 18, 2)]
     # add_new_points_column = [
     #     [sg.Text('For left Palm')],
@@ -462,6 +477,7 @@ if __name__ == "__main__":
             drag_submits=True
         )],
         [sg.Column(labels_column, background_color='#26273b', size=(IM_WIDTH/2, IM_HEIGHT/2))],
+        [sg.Column(calibration_column, background_color='#26273b')],
         [sg.Column(controls_column, background_color='#26273b')],
 
     ]
@@ -487,7 +503,8 @@ if __name__ == "__main__":
         #     graph.set_cursor(cursor='fleur')  # not yet released method... coming soon!
         # elif not event.startswith('-GRAPH-'):
         #     graph.set_cursor(cursor='left_ptr')  # not yet released method... coming soon!
-
+        if event == "-CALIB-":
+            open_window()
         if event == "-GRAPH-":  # if there's a "Graph" event, then it's a mouse
             x, y = values["-GRAPH-"]
             if not dragging:
@@ -550,6 +567,10 @@ if __name__ == "__main__":
                                               window)
                 itr_left -= 1
                 itr_right -= 1
+        for text_idx in range(1, 18):
+            if event == 'txt'+str(text_idx):
+                # window["-INFO-"].update(values[f'txt{str(text_idx)}'])
+                print(f'VALUES {values["txt2"]}')
     # print(f'size lfps: {len(left_camera_points)}')
     print(f'shape left point {len(left_camera_points)} \n right point {len(right_camera_points)}')
     XYZ_coords_to_csv(left_camera_points, right_camera_points, projection_matrix_1, projection_matrix_2,
