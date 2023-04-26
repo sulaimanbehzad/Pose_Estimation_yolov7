@@ -429,15 +429,17 @@ if __name__ == "__main__":
 
     sg.theme('Dark Blue 2')
     controls_column = [
-        [sg.Text("Controls: ")], [sg.Button('Next Image', enable_events=True, key="-SHOW-"),
+        [sg.Text("Controls: ")], [sg.Button('Previous Image', enable_events=True, key="-PREV-"),
+                                  sg.Button('Next Image', enable_events=True, key="-NEXT-"),
                                   sg.Button('Exit', key='-EXIT-'),
-                                  sg.R('Move Stuff', 1, key='-MOVE-', enable_events=True, background_color='#26273b'),
-                                  sg.Button('Update Labels', enable_events=True, key='-UPDATE-')]
+                                  # sg.R('Move Stuff', 1, key='-MOVE-', enable_events=True, background_color='#26273b'),
+                                  # sg.Button('Update Labels', enable_events=True, key='-UPDATE-')
+                                  ]
     ]
     labels_column = [
-        [sg.Text(f'{i}. ', key=f'txt{i}', size=(15, 1)), sg.Multiline(f"{i} txt", key=f'input{i}', size=(20, 1)),
+        [sg.Text(f'{i}. ', key=f'txt{i}', size=(15, 1)), sg.Input(f"{i} txt", key=f'input{i}', size=(15, 1)),
          sg.Text(f'{i + 1}. ', key=f'txt{i + 1}', size=(15, 1)),
-         sg.Multiline(f"{i + 1} txt", key=f'input{i + 1}', size=(20, 1))] for i in range(1, 18, 2)]
+         sg.Input(f"{i + 1} txt", key=f'input{i + 1}', size=(15, 1))] for i in range(1, 18, 2)]
     # add_new_points_column = [
     #     [sg.Text('For left Palm')],
     #     [sg.Text('Coordinates in LEFT Pic'), sg.Multiline('1', key='l_x_1'), sg.Multiline('2', key='l_y_1')],
@@ -459,7 +461,7 @@ if __name__ == "__main__":
             enable_events=True,
             drag_submits=True
         )],
-        [sg.Column(labels_column, background_color='#26273b', scrollable=True, size=(IM_WIDTH, IM_HEIGHT/2))],
+        [sg.Column(labels_column, background_color='#26273b', size=(IM_WIDTH/2, IM_HEIGHT/2))],
         [sg.Column(controls_column, background_color='#26273b')],
 
     ]
@@ -481,10 +483,10 @@ if __name__ == "__main__":
         if event == "-EXIT-" or event == sg.WIN_CLOSED:
             break
 
-        if event in ('-MOVE-', '-MOVEALL-'):
-            graph.set_cursor(cursor='fleur')  # not yet released method... coming soon!
-        elif not event.startswith('-GRAPH-'):
-            graph.set_cursor(cursor='left_ptr')  # not yet released method... coming soon!
+        # if event in ('-MOVE-', '-MOVEALL-'):
+        #     graph.set_cursor(cursor='fleur')  # not yet released method... coming soon!
+        # elif not event.startswith('-GRAPH-'):
+        #     graph.set_cursor(cursor='left_ptr')  # not yet released method... coming soon!
 
         if event == "-GRAPH-":  # if there's a "Graph" event, then it's a mouse
             x, y = values["-GRAPH-"]
@@ -503,19 +505,19 @@ if __name__ == "__main__":
                 graph.delete_figure(prior_rect)
             delta_x, delta_y = x - lastxy[0], y - lastxy[1]
             lastxy = x, y
-            if None not in (start_point, end_point):
-                if values['-MOVE-']:
-                    for fig in drag_figures:
-                        graph.move_figure(fig, delta_x, delta_y)
-                        graph.update()
+            # if None not in (start_point, end_point):
+            #     if values['-MOVE-']:
+            #         for fig in drag_figures:
+            #             graph.move_figure(fig, delta_x, delta_y)
+            #             graph.update()
             window["-INFO-"].update(value=f"mouse {values['-GRAPH-']}")
         elif event.endswith('+UP'):  # The drawing has ended because mouse up
             window["-INFO-"].update(value=f"grabbed rectangle from {start_point} to {end_point}")
             start_point, end_point = None, None  # enable grabbing a new rect
             dragging = False
             prior_rect = None
-        if event == '-SHOW-':
-            print('clicked Next Image')
+        if event == '-NEXT-':
+            window["-INFO-"].update('Showing Next Image')
             if (itr_left and itr_right) < len(imgs_left):
                 lfp, rfp = draw_image_details(imgs_left.iloc[itr_left], imgs_right.iloc[itr_right], df_left, df_right,
                                               window)
@@ -541,6 +543,8 @@ if __name__ == "__main__":
                 right_camera_points.append(rfp)
                 itr_left += 1
                 itr_right += 1
+        if event == '-PREV-':
+            window["-INFO-"].update('Showing Previous Image')
     # print(f'size lfps: {len(left_camera_points)}')
     print(f'shape left point {len(left_camera_points)} \n right point {len(right_camera_points)}')
     XYZ_coords_to_csv(left_camera_points, right_camera_points, projection_matrix_1, projection_matrix_2,
