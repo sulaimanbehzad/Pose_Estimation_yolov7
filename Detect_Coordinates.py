@@ -427,6 +427,8 @@ def open_window():
 if __name__ == "__main__":
 
     font = ('Montserrat', 10)
+    font_button = ('Montserrat', 12)
+    font_title = ('Montserrat', 14)
 
     img_next = './data/Icons/Next Image.png'
     img_prev = './data/Icons/Previous Image.png'
@@ -461,17 +463,17 @@ if __name__ == "__main__":
 
     rig_column = [[sg.Text(key='-INFO-', size=(60, 1), background_color='#26273b')], [sg.Image(data=resize_image(img_model_rig, 140, 200), expand_x=True, expand_y=True)]]
     calibration_column = [
-        [sg.Text("Calibration and Detection")], [sg.Button('Calibration and Detection', enable_events=True,
+        [sg.Text("Calibration \n&\n Detection", font=font_title, justification='c')], [sg.Button('Calibration and Detection', enable_events=True,
                                                            key="-CALIB-", button_color=('white', '#D73CBE'),
-                                                           border_width=0, size=(10, 3), font=('Montserrat', 16))]
+                                                           border_width=0, size=(10, 3), font=font_button)]
     ]
     controls_column = [
-        [sg.Text("Controls: ")], [
-                                  sg.Button('Previous Image', button_color=('white', '#D73CBE'), font=('Montserrat', 16),
+        [sg.Text("Controls: ", font=font_title)], [
+                                  sg.Button('Previous Image', button_color=('white', '#D73CBE'), font=font_button,
                                             border_width=0, key="-PREV-", size=(10, 2))],
-                                  [sg.Button('Next Image', button_color=('white', '#AF3BFD'), font=('Montserrat', 16),
+                                  [sg.Button('Next Image', button_color=('white', '#AF3BFD'), font=font_button,
                                             border_width=0, enable_events=True, key="-NEXT-", size=(10, 2))],
-                                  [sg.Button('Save & Exit', button_color=('white', '#338DFC'), font=('Montserrat', 16),
+                                  [sg.Button('Save & Exit', button_color=('white', '#338DFC'), font=font_button,
                                             border_width=0, key='-EXIT-', size=(10, 2))],
     ]
     labels_column = [
