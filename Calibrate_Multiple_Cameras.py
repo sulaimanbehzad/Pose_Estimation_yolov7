@@ -10,29 +10,6 @@ import time
 print(cv2.__version__)
 
 # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
-# Current Grid 11 * 7
-# New Grid 10 * 4
-# New Grid 10 * 6
-# New Grid 8 * 4
-# New Grid 9 * 3
-BOARD_SIZE = (4, 8)
-
-IM_HEIGHT = 576
-IM_WIDTH = 1024
-# square size
-SQUARE_SIZE = 12.5
-
-# Images directory for loading
-LEFT_PATH = 'data/calib_imgs5/leftcamera'
-RIGHT_PATH = 'data/calib_imgs5/rightcamera'
-
-print('We have {} Images from the left camera'.format(len(os.listdir(LEFT_PATH))))
-print('and {} Images from the right camera.'.format(len(os.listdir(RIGHT_PATH))))
-
-# sort the image names after their number
-# save the image names with the whole path in a list
-
-print('Before: {}, {}, {}, ...'.format(os.listdir(LEFT_PATH)[0], os.listdir(LEFT_PATH)[1], os.listdir(LEFT_PATH)[2]))
 
 
 def SortImageNames(path):
@@ -49,26 +26,6 @@ def SortImageNames(path):
                 ImageNamesRaw.append(name)
     return ImageNames
 
-
-Left_Paths = SortImageNames(LEFT_PATH)
-Right_Paths = SortImageNames(RIGHT_PATH)
-
-print('After: {}, {}, {}, ...'.format(os.path.basename(Left_Paths[0]), os.path.basename(Left_Paths[1]),
-                                      os.path.basename(Left_Paths[2])))
-
-# we have to create the objectpoints
-# that are the local 2D-points on the pattern, corresponding
-# to the local coordinate system on the top left corner.
-
-objpoints = np.zeros((BOARD_SIZE[0] * BOARD_SIZE[1], 3), np.float32)
-objpoints[:, :2] = np.mgrid[0:BOARD_SIZE[0], 0:BOARD_SIZE[1]].T.reshape(-1, 2)
-objpoints *= SQUARE_SIZE
-
-
-# now we have to find the imagepoints
-# these are the same points like the objectpoints but depending
-# on the camera coordination system in 3D
-# the imagepoints are not the same for each image/camera
 
 def GenerateImagepoints(paths):
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
@@ -239,21 +196,42 @@ def StereoCalibration(leftparams, rightparams, objpoints, imgpL, imgpR, Left_Pat
     StereoParams['MeanError'] = ret
     return StereoParams
 
+def run_calibration(left_camera_dir, right_camera_dir, board_size):
+    print('We have {} Images from the left camera'.format(len(os.listdir(left_camera_dir))))
+    print('and {} Images from the right camera.'.format(len(os.listdir(right_camera_dir))))
 
-# stuff to run always here such as class/def
-def main():
-    pass
+    # sort the image names after their number
+    # save the image names with the whole path in a list
 
+    print(
+        'Before: {}, {}, {}, ...'.format(os.listdir(left_camera_dir)[0], os.listdir(left_camera_dir)[1], os.listdir(left_camera_dir)[2]))
 
-if __name__ == "__main__":
+    Left_Path_Sorted = SortImageNames(left_camera_dir)
+    Right_Path_Sorted = SortImageNames(right_camera_dir)
 
-    Left_imgpoints = GenerateImagepoints(Left_Paths)
-    Right_imgpoints = GenerateImagepoints(Right_Paths)
+    print('After: {}, {}, {}, ...'.format(os.path.basename(Left_Path_Sorted[0]), os.path.basename(Left_Path_Sorted[1]),
+                                          os.path.basename(Left_Path_Sorted[2])))
+
+    # we have to create the objectpoints
+    # that are the local 2D-points on the pattern, corresponding
+    # to the local coordinate system on the top left corner.
+
+    objpoints = np.zeros((BOARD_SIZE[0] * BOARD_SIZE[1], 3), np.float32)
+    objpoints[:, :2] = np.mgrid[0:BOARD_SIZE[0], 0:BOARD_SIZE[1]].T.reshape(-1, 2)
+    objpoints *= SQUARE_SIZE
+
+    # now we have to find the imagepoints
+    # these are the same points like the objectpoints but depending
+    # on the camera coordination system in 3D
+    # the imagepoints are not the same for each image/camera
+
+    Left_imgpoints = GenerateImagepoints(Left_Path_Sorted)
+    Right_imgpoints = GenerateImagepoints(Right_Path_Sorted)
     print(f'Detected left: {len(Left_imgpoints)}')
     print(f'Detected right: {len(Left_imgpoints)}')
 
-    example_image_left = DisplayImagePoints(Left_Paths[0], Left_imgpoints[0])
-    example_image_right = DisplayImagePoints(Right_Paths[0], Right_imgpoints[0])
+    example_image_left = DisplayImagePoints(Left_Path_Sorted[0], Left_imgpoints[0])
+    example_image_right = DisplayImagePoints(Right_Path_Sorted[0], Right_imgpoints[0])
     fig = plt.figure(figsize=(20, 20))
     grid = ImageGrid(fig, 111, nrows_ncols=(1, 2), axes_pad=0.1)
 
@@ -342,4 +320,28 @@ if __name__ == "__main__":
     npz['L_Imgpoints'] = np.resize(npz.pop('L_Imgpoints'), size)
     npz['R_Imgpoints'] = np.resize(npz.pop('R_Imgpoints'), size)
     np.savez(file, **npz)
+
+# stuff to run always here such as class/def
+def main():
+    pass
+
+
+if __name__ == "__main__":
+
+    # Current Grid 11 * 7
+    # New Grid 10 * 4
+    # New Grid 10 * 6
+    # New Grid 8 * 4
+    # New Grid 9 * 3
+    BOARD_SIZE = (4, 8)
+
+    IM_HEIGHT = 576
+    IM_WIDTH = 1024
+    # square size
+    SQUARE_SIZE = 12.5
+
+    # Images directory for loading
+    LEFT_PATH = 'data/calib_imgs5/leftcamera'
+    RIGHT_PATH = 'data/calib_imgs5/rightcamera'
+    run_calibration(LEFT_PATH, RIGHT_PATH, BOARD_SIZE)
     main()
