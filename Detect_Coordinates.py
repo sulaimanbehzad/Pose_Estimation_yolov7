@@ -415,7 +415,13 @@ def combine_labels(left_prop, right_prop):
 
 
 def open_calibration_window():
-    layout = [[sg.Text("Calibration", key="-CALIBWIN-")]]
+    layout = [[sg.T("ddd")],
+              [sg.Text("Choose the folder for chessboard pictures from the camera: "),
+               sg.Input(key="-IN1-", change_submits=True), sg.FolderBrowse(key="-FB1-")],
+              [sg.Text("Choose the folder for chessboard pictures from the second camera: "),
+               sg.Input(key="-IN2-", change_submits=True), sg.FolderBrowse(key="-FB2-")],
+              [sg.Text("Board Size:"), sg.Input("Vertical", key='-IN_V-'), sg.Input("Horizontal", key='-IN_H-')],
+              [sg.Button("Submit")]]
     window = sg.Window(title='Camera Calibration', layout=layout, size=(1080, 720), element_justification='c',
                        element_padding=5, location=(0, 0), background_color='#1b1c30', resizable=True)
     choice = None
@@ -423,7 +429,9 @@ def open_calibration_window():
         event, values = window.read()
         if event == "Exit" or event == sg.WIN_CLOSED:
             break
-
+        if event == "Submit":
+            print(values['-IN1-'])
+            print(values['-IN2-'])
     window.close()
 
 
