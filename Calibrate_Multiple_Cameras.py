@@ -84,7 +84,7 @@ def PlotLocalCoordinates(img, points):
 
 def CalibrateCamera(paths, imgpoints, objpoints):
     CameraParams = {}
-    temp = cv2.imread(Left_Paths[0])
+    temp = cv2.imread(paths[0])
     temp = cv2.resize(temp, (IM_WIDTH, IM_HEIGHT))
     gray = cv2.cvtColor(temp, cv2.COLOR_BGR2GRAY)
     g = gray.shape[::-1]
@@ -92,7 +92,7 @@ def CalibrateCamera(paths, imgpoints, objpoints):
     flags = 0
 
     objp = []
-    for i in range(len(Left_imgpoints)):
+    for i in range(len(imgpoints)):
         objp.append(objpoints)
     (ret, mtx, dist, rvecs, tvecs) = cv2.calibrateCamera(objp, imgpoints, g, None, None, flags=flags)
 
@@ -104,7 +104,7 @@ def CalibrateCamera(paths, imgpoints, objpoints):
         Tmtx.append(np.vstack((np.hstack((Rmtx[k], tvecs[k])), np.array([0, 0, 0, 1]))))
         k += 1
 
-    img = cv2.imread(Left_Paths[0], 0)
+    img = cv2.imread(paths[0], 0)
     img = cv2.resize(img, (IM_WIDTH, IM_HEIGHT))
     h, w = img.shape[:2]
     newmtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w, h), 1, (w, h))
@@ -164,7 +164,7 @@ def CalculateErrors(params, imgpoints, objpoints):
 
 
 
-def StereoCalibration(leftparams, rightparams, objpoints, imgpL, imgpR, Left_Paths, Right_Paths):
+def StereoCalibration(leftparams, rightparams, objpoints, imgpL, imgpR, Left_Paths):
     StereoParams = {}
 
     k1 = leftparams['Intrinsic']
@@ -180,7 +180,7 @@ def StereoCalibration(leftparams, rightparams, objpoints, imgpL, imgpR, Left_Pat
     flags |= cv2.CALIB_FIX_INTRINSIC
 
     objp = []
-    for i in range(len(Left_imgpoints)):
+    for i in range(len(imgpL)):
         objp.append(objpoints)
 
     (ret, K1, D1, K2, D2, R, t, E, F) = cv2.stereoCalibrate(objp, imgpL, imgpR, k1, d1, k2, d2, g, criteria=criteria,
@@ -240,7 +240,7 @@ def run_calibration(left_camera_dir, right_camera_dir, board_size):
         ax.axis('off')
 
     n = 2
-    img = cv2.imread(Left_Paths[n])
+    img = cv2.imread(Left_Path_Sorted[n])
     img = cv2.resize(img, (IM_WIDTH, IM_HEIGHT))
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     # cv2.imshow('ex', img)
@@ -256,8 +256,8 @@ def run_calibration(left_camera_dir, right_camera_dir, board_size):
     # Camera Calibration
     Start_Time_Cal = time.perf_counter()
 
-    Left_Params = CalibrateCamera(Left_Paths, Left_imgpoints, objpoints)
-    Right_Params = CalibrateCamera(Right_Paths, Right_imgpoints, objpoints)
+    Left_Params = CalibrateCamera(Left_Path_Sorted, Left_imgpoints, objpoints)
+    Right_Params = CalibrateCamera(Right_Path_Sorted, Right_imgpoints, objpoints)
 
     np.set_printoptions(suppress=True, precision=5)
     print('Intrinsic Matrix:')
@@ -282,8 +282,7 @@ def run_calibration(left_camera_dir, right_camera_dir, board_size):
     Right_Params['Errors'] = Right_Errors
     Right_Params['MeanError'] = Right_MeanError
 
-    Stereo_Params = StereoCalibration(Left_Params, Right_Params, objpoints, Left_imgpoints, Right_imgpoints, Left_Paths,
-                                      Right_Paths)
+    Stereo_Params = StereoCalibration(Left_Params, Right_Params, objpoints, Left_imgpoints, Right_imgpoints, Left_Path_Sorted)
 
     print('Transformation Matrix:')
     print(Stereo_Params['Transformation'])
