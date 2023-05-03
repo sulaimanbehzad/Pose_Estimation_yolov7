@@ -27,7 +27,7 @@ def SortImageNames(path):
     return ImageNames
 
 
-def GenerateImagepoints(paths):
+def GenerateImagepoints(paths, board_size):
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
     imgpoints = []
     for name in paths:
@@ -40,7 +40,7 @@ def GenerateImagepoints(paths):
         # if height > 1000:
         #     temp = cv2.GaussianBlur(gray, (0, 0), cv2.BORDER_DEFAULT)
         #     temp = cv2.addWeighted(gray, 1.8, temp, -0.8,0,gray)
-        ret, corners1 = cv2.findChessboardCorners(temp, BOARD_SIZE)
+        ret, corners1 = cv2.findChessboardCorners(temp, board_size)
         if ret:
             corners2 = cv2.cornerSubPix(gray, corners1, (4, 4), (-1, -1), criteria)
             imgpoints.append(corners2)
@@ -50,11 +50,11 @@ def GenerateImagepoints(paths):
 
 # we also can display the imagepoints on the example pictures.
 
-def DisplayImagePoints(path, imgpoints):
+def DisplayImagePoints(path, imgpoints, board_size):
     img = cv2.imread(path)
     img = cv2.resize(img, (IM_WIDTH, IM_HEIGHT))
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    img = cv2.drawChessboardCorners(img, BOARD_SIZE, imgpoints, True)
+    img = cv2.drawChessboardCorners(img, board_size, imgpoints, True)
     return img
 
 
@@ -66,16 +66,16 @@ def DisplayImagePoints(path, imgpoints):
 # the origin is at the top left corner
 # the orientation is like: long side = X
 
-def PlotLocalCoordinates(img, points):
+def PlotLocalCoordinates(img, points, board_size):
     points = np.int32(points)
     cv2.arrowedLine(img, tuple(points[0, 0]), tuple(points[3, 0]), (255, 0, 0), 3, tipLength=0.05)
-    cv2.arrowedLine(img, tuple(points[0, 0]), tuple(points[BOARD_SIZE[0] * 3, 0]), (255, 0, 0), 3, tipLength=0.05)
+    cv2.arrowedLine(img, tuple(points[0, 0]), tuple(points[board_size[0] * 3, 0]), (255, 0, 0), 3, tipLength=0.05)
     cv2.circle(img, tuple(points[0, 0]), 8, (0, 255, 0), 3)
     cv2.putText(img, '0,0', (points[0, 0, 0] - 35, points[0, 0, 1] - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.6,
                 (255, 255, 255), 2, cv2.LINE_AA)
     cv2.putText(img, 'X', (points[4, 0, 0] - 25, points[4, 0, 1] - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255),
                 2, cv2.LINE_AA)
-    cv2.putText(img, 'Y', (points[BOARD_SIZE[0] * 3, 0, 0] - 25, points[BOARD_SIZE[0] * 3, 0, 1] - 15),
+    cv2.putText(img, 'Y', (points[board_size[0] * 3, 0, 0] - 25, points[board_size[0] * 3, 0, 1] - 15),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2, cv2.LINE_AA)
     return img
 
@@ -196,7 +196,7 @@ def StereoCalibration(leftparams, rightparams, objpoints, imgpL, imgpR, Left_Pat
     StereoParams['MeanError'] = ret
     return StereoParams
 
-def run_calibration(left_camera_dir, right_camera_dir, board_size):
+def run_calibration(left_camera_dir, right_camera_dir, board_size, square_size):
     print('We have {} Images from the left camera'.format(len(os.listdir(left_camera_dir))))
     print('and {} Images from the right camera.'.format(len(os.listdir(right_camera_dir))))
 
@@ -216,22 +216,22 @@ def run_calibration(left_camera_dir, right_camera_dir, board_size):
     # that are the local 2D-points on the pattern, corresponding
     # to the local coordinate system on the top left corner.
 
-    objpoints = np.zeros((BOARD_SIZE[0] * BOARD_SIZE[1], 3), np.float32)
-    objpoints[:, :2] = np.mgrid[0:BOARD_SIZE[0], 0:BOARD_SIZE[1]].T.reshape(-1, 2)
-    objpoints *= SQUARE_SIZE
+    objpoints = np.zeros((board_size[0] * board_size[1], 3), np.float32)
+    objpoints[:, :2] = np.mgrid[0:board_size[0], 0:board_size[1]].T.reshape(-1, 2)
+    objpoints *= square_size
 
     # now we have to find the imagepoints
     # these are the same points like the objectpoints but depending
     # on the camera coordination system in 3D
     # the imagepoints are not the same for each image/camera
 
-    Left_imgpoints = GenerateImagepoints(Left_Path_Sorted)
-    Right_imgpoints = GenerateImagepoints(Right_Path_Sorted)
+    Left_imgpoints = GenerateImagepoints(Left_Path_Sorted, board_size)
+    Right_imgpoints = GenerateImagepoints(Right_Path_Sorted, board_size)
     print(f'Detected left: {len(Left_imgpoints)}')
     print(f'Detected right: {len(Left_imgpoints)}')
 
-    example_image_left = DisplayImagePoints(Left_Path_Sorted[0], Left_imgpoints[0])
-    example_image_right = DisplayImagePoints(Right_Path_Sorted[0], Right_imgpoints[0])
+    example_image_left = DisplayImagePoints(Left_Path_Sorted[0], Left_imgpoints[0], board_size)
+    example_image_right = DisplayImagePoints(Right_Path_Sorted[0], Right_imgpoints[0], board_size)
     fig = plt.figure(figsize=(20, 20))
     grid = ImageGrid(fig, 111, nrows_ncols=(1, 2), axes_pad=0.1)
 
@@ -297,8 +297,8 @@ def run_calibration(left_camera_dir, right_camera_dir, board_size):
     print('elapsed time for calibration process: {:.2f} seconds.'.format(end))
 
     Parameters = Stereo_Params
-    Parameters['SquareSize'] = SQUARE_SIZE
-    Parameters['BoardSize'] = BOARD_SIZE
+    Parameters['SquareSize'] = square_size
+    Parameters['BoardSize'] = board_size
     Parameters['Objpoints'] = objpoints
 
     for Lkey in Left_Params.keys():
@@ -342,5 +342,5 @@ if __name__ == "__main__":
     # Images directory for loading
     LEFT_PATH = 'data/calib_imgs5/leftcamera'
     RIGHT_PATH = 'data/calib_imgs5/rightcamera'
-    run_calibration(LEFT_PATH, RIGHT_PATH, BOARD_SIZE)
+    run_calibration(LEFT_PATH, RIGHT_PATH, BOARD_SIZE, SQUARE_SIZE)
     main()
