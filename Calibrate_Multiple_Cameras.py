@@ -9,6 +9,9 @@ import time
 # check if opencv is installed
 print(cv2.__version__)
 
+# Global Variables
+IM_HEIGHT = 576
+IM_WIDTH = 1024
 # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
 
 
@@ -334,8 +337,6 @@ if __name__ == "__main__":
     # New Grid 9 * 3
     BOARD_SIZE = (4, 8)
 
-    IM_HEIGHT = 576
-    IM_WIDTH = 1024
     # square size
     SQUARE_SIZE = 12.5
 
