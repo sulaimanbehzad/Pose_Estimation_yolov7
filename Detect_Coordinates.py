@@ -10,6 +10,7 @@ from matplotlib.offsetbox import (TextArea, DrawingArea, OffsetImage, Annotation
 import PySimpleGUI as sg
 import pickle
 import codecs
+from Calibrate_Multiple_Cameras import run_calibration
 
 IM_HEIGHT = 576
 IM_WIDTH = 1024
@@ -432,6 +433,9 @@ def open_calibration_window():
         if event == "Submit":
             print(values['-IN1-'])
             print(values['-IN2-'])
+            board_size = (int(values['-IN_V-']), int(values['-IN_H-']))
+            square_size = 12.5
+            run_calibration(values['-IN1-'], values['-IN2-'], board_size, square_size)
     window.close()
 
 
