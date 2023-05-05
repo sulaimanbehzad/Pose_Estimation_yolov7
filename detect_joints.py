@@ -287,16 +287,7 @@ def save_raw_output(imgs_path, out_path, orig_shape=None):
     df.to_csv(out_path, mode='w+', index=False)
 
 
-def main():
-    pass
-
-
-if __name__ == '__main__':
-    left_imgs_path = 'data/pose_imgs/Pose6/leftcamera'
-    right_imgs_path = 'data/pose_imgs/Pose6/rightcamera'
-    output_left_keypoints = 'data/out/keypoint_left_06.csv'
-    output_right_keypoints = 'data/out/keypoint_right_06.csv'
-
+def run_joint_detection(left_pose_dir, right_pose_dir, left_save_dir, right_save_dir):
     print('We have {} Images from the left camera'.format(len(os.listdir(left_imgs_path))))
     print('and {} Images from the right camera.'.format(len(os.listdir(right_imgs_path))))
     print('Before: {}, {}, {}, ...'.format(os.listdir(left_imgs_path)[0], os.listdir(left_imgs_path)[1],
@@ -320,3 +311,16 @@ if __name__ == '__main__':
     # imgs_path = 'images/IM_L_11.jpg'
     # output, image = run_inference(imgs_path) # Bryan Reyes on Unsplash
     # visualize_output(output, image)
+
+def main():
+    pass
+
+
+if __name__ == '__main__':
+    left_imgs_path = 'data/pose_imgs/Pose6/leftcamera'
+    right_imgs_path = 'data/pose_imgs/Pose6/rightcamera'
+    output_left_keypoints = 'data/out/keypoint_left_06.csv'
+    output_right_keypoints = 'data/out/keypoint_right_06.csv'
+
+    run_joint_detection(left_imgs_path, right_imgs_path, output_left_keypoints, output_right_keypoints)
+
