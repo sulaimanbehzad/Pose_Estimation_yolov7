@@ -287,17 +287,20 @@ def save_raw_output(imgs_path, out_path, orig_shape=None):
     df.to_csv(out_path, mode='w+', index=False)
 
 
-def run_joint_detection(left_pose_dir, right_pose_dir, left_save_dir, right_save_dir):
-    print('We have {} Images from the left camera'.format(len(os.listdir(left_imgs_path))))
-    print('and {} Images from the right camera.'.format(len(os.listdir(right_imgs_path))))
-    print('Before: {}, {}, {}, ...'.format(os.listdir(left_imgs_path)[0], os.listdir(left_imgs_path)[1],
-                                           os.listdir(left_imgs_path)[2]))
-    left_sorted = SortImageNames(left_imgs_path)
-    right_sorted = SortImageNames(right_imgs_path)
+def run_joint_detection(left_pose_dir, right_pose_dir):
+    output_left_keypoints = 'data/out/keypoint_left_06.csv'
+    output_right_keypoints = 'data/out/keypoint_right_06.csv'
+
+    print('We have {} Images from the left camera'.format(len(os.listdir(left_pose_dir))))
+    print('and {} Images from the right camera.'.format(len(os.listdir(right_pose_dir))))
+    print('Before: {}, {}, {}, ...'.format(os.listdir(left_pose_dir)[0], os.listdir(left_pose_dir)[1],
+                                           os.listdir(left_pose_dir)[2]))
+    left_sorted = SortImageNames(left_pose_dir)
+    right_sorted = SortImageNames(right_pose_dir)
     print('After: {}, {}, {}, ...'.format(os.path.basename(left_sorted[0]), os.path.basename(left_sorted[1]),
                                           os.path.basename(left_sorted[2])))
-    left_output, left_image = multiple_pics_inference(left_imgs_path)
-    right_output, right_image = multiple_pics_inference(right_imgs_path)
+    left_output, left_image = multiple_pics_inference(left_pose_dir)
+    right_output, right_image = multiple_pics_inference(right_pose_dir)
     # visualize_multiple_pics(left_output,left_image)
     # get_keypoints(left_output[2], left_image[2])
     visualize_output(left_output[1], left_image[1])
@@ -319,8 +322,6 @@ def main():
 if __name__ == '__main__':
     left_imgs_path = 'data/pose_imgs/Pose6/leftcamera'
     right_imgs_path = 'data/pose_imgs/Pose6/rightcamera'
-    output_left_keypoints = 'data/out/keypoint_left_06.csv'
-    output_right_keypoints = 'data/out/keypoint_right_06.csv'
 
-    run_joint_detection(left_imgs_path, right_imgs_path, output_left_keypoints, output_right_keypoints)
+    run_joint_detection(left_imgs_path, right_imgs_path)
 
