@@ -11,6 +11,7 @@ import PySimpleGUI as sg
 import pickle
 import codecs
 from Calibrate_Multiple_Cameras import run_calibration
+from detect_joints import run_joint_detection
 
 IM_HEIGHT = 576
 IM_WIDTH = 1024
@@ -441,16 +442,28 @@ def open_calibration_window():
 
 
 def open_detection_window():
-    layout = [[sg.Text("Detection", key="-DETECTWIN-")]]
-    window = sg.Window(title='Joint Detection', layout=layout, size=(1080, 720),
-                       element_justification='c',
+    layout = [
+        [sg.T("Please enter the parameters needed for Joint Detection")],
+              [sg.Text("Select the folder for character's pose pictures from first camera: "),
+               sg.Input(key="-IN1-", change_submits=True), sg.FolderBrowse(key="-FB1-")],
+              [sg.Text("Select the folder for character's pose pictures from second camera: "),
+               sg.Input(key="-IN2-", change_submits=True), sg.FolderBrowse(key="-FB2-")],
+              [sg.Button("Start Detection", key='-START_DETECTION-')],
+        [sg.Text("", font=font_title,text_color='Green', background_color='White', key="-STATUS_UPDATE-")]
+    ]
+
+    window = sg.Window(title='Joint Detection', layout=layout, size=(1080, 720), element_justification='c',
                        element_padding=5, location=(0, 0), background_color='#1b1c30', resizable=True)
     choice = None
     while True:
         event, values = window.read()
         if event == "Exit" or event == sg.WIN_CLOSED:
             break
-
+        if event == "-START_DETECTION-":
+            print(values['-IN1-'])
+            print(values['-IN2-'])
+            run_joint_detection(values['-IN1-'], values['-IN2-'])
+            window['-STATUS_UPDATE-'].update('Output is saved successfully. \nPlease move on to the next phase!')
     window.close()
 
 
