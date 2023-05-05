@@ -16,7 +16,6 @@ IM_HEIGHT = 576
 IM_WIDTH = 1024
 left_kpts = 'data/out/keypoint_left_06.csv'
 right_kpts = 'data/out/keypoint_right_06.csv'
-file = 'data/out/parameters.npz'
 # in the dataset I have stored an example parameters file
 param_path = 'data/out/parameters.npz'
 # the parameters are stored in a NPZ file
@@ -416,13 +415,15 @@ def combine_labels(left_prop, right_prop):
 
 
 def open_calibration_window():
-    layout = [[sg.T("ddd")],
-              [sg.Text("Choose the folder for chessboard pictures from the camera: "),
+    layout = [[sg.T("Please enter the parameters needed for Stereo Camera Calibration")],
+              [sg.Text("Select the folder for chessboard pictures from first camera: "),
                sg.Input(key="-IN1-", change_submits=True), sg.FolderBrowse(key="-FB1-")],
-              [sg.Text("Choose the folder for chessboard pictures from the second camera: "),
+              [sg.Text("Select the folder for chessboard pictures from second camera: "),
                sg.Input(key="-IN2-", change_submits=True), sg.FolderBrowse(key="-FB2-")],
               [sg.Text("Board Size:"), sg.Input("Vertical", key='-IN_V-'), sg.Input("Horizontal", key='-IN_H-')],
+              [sg.Text("Square Size (millimeter):"), sg.Input("", key='-IN_SQ-')],
               [sg.Button("Submit")]]
+
     window = sg.Window(title='Camera Calibration', layout=layout, size=(1080, 720), element_justification='c',
                        element_padding=5, location=(0, 0), background_color='#1b1c30', resizable=True)
     choice = None
@@ -434,7 +435,7 @@ def open_calibration_window():
             print(values['-IN1-'])
             print(values['-IN2-'])
             board_size = (int(values['-IN_V-']), int(values['-IN_H-']))
-            square_size = 12.5
+            square_size = int(values['-IN_SQ-'])
             run_calibration(values['-IN1-'], values['-IN2-'], board_size, square_size)
     window.close()
 
