@@ -322,6 +322,6 @@ def main():
 if __name__ == '__main__':
     left_imgs_path = 'data/pose_imgs/Pose6/leftcamera'
     right_imgs_path = 'data/pose_imgs/Pose6/rightcamera'
-
     run_joint_detection(left_imgs_path, right_imgs_path)
+    main()
 
