@@ -416,14 +416,14 @@ def combine_labels(left_prop, right_prop):
 
 
 def open_calibration_window():
-    layout = [[sg.T("Please enter the parameters needed for Stereo Camera Calibration")],
-              [sg.Text("Select the folder for chessboard pictures from first camera: "),
-               sg.Input(key="-IN1-", change_submits=True), sg.FolderBrowse(key="-FB1-")],
-              [sg.Text("Select the folder for chessboard pictures from second camera: "),
-               sg.Input(key="-IN2-", change_submits=True), sg.FolderBrowse(key="-FB2-")],
-              [sg.Text("Board Size:"), sg.Input("Vertical", key='-IN_V-'), sg.Input("Horizontal", key='-IN_H-')],
-              [sg.Text("Square Size (millimeter):"), sg.Input("", key='-IN_SQ-')],
-              [sg.Button("Submit")]]
+    layout = [[sg.T("Please enter the parameters needed for Stereo Camera Calibration", font=font_title)],
+              [sg.Text("Select the folder for chessboard pictures from first camera: ", font=font_button, size=(20, 3)),
+               sg.Input(key="-IN1-", change_submits=True, expand_x=True), sg.FolderBrowse(key="-FB1-")],
+              [sg.Text("Select the folder for chessboard pictures from second camera: ", font=font_button, size=(20, 3)),
+               sg.Input(key="-IN2-", change_submits=True, expand_x=True), sg.FolderBrowse(key="-FB2-")],
+              [sg.Text("Board Size:", font=font_button, size=(20, 3)), sg.Input("Vertical", key='-IN_V-', expand_x=True), sg.Input("Horizontal", key='-IN_H-', expand_x=True)],
+              [sg.Text("Square Size (millimeter):", font=font_button, size=(20, 3)), sg.Input("", key='-IN_SQ-')],
+              [sg.Button("Submit", font=font_button, size=(20, 3))]]
 
     window = sg.Window(title='Camera Calibration', layout=layout, size=(1080, 720), element_justification='c',
                        element_padding=5, location=(0, 0), background_color='#1b1c30', resizable=True)
@@ -442,14 +442,17 @@ def open_calibration_window():
 
 
 def open_detection_window():
-    layout = [
-        [sg.T("Please enter the parameters needed for Joint Detection")],
-              [sg.Text("Select the folder for character's pose pictures from first camera: "),
+    l_column = [
+        [sg.Text("Select the folder for character's pose pictures from first camera: ", font=font_button),
                sg.Input(key="-IN1-", change_submits=True), sg.FolderBrowse(key="-FB1-")],
-              [sg.Text("Select the folder for character's pose pictures from second camera: "),
+              [sg.Text("Select the folder for character's pose pictures from second camera: ", font=font_button),
                sg.Input(key="-IN2-", change_submits=True), sg.FolderBrowse(key="-FB2-")],
-              [sg.Button("Start Detection", key='-START_DETECTION-')],
-        [sg.Text("", font=font_title,text_color='Green', background_color='White', key="-STATUS_UPDATE-")]
+              [sg.Button("Start Detection", key='-START_DETECTION-', font=font_button)],
+        [sg.Text("", font=font_button, text_color='Green', background_color='White', key="-STATUS_UPDATE-")]
+                 ]
+    layout = [
+        [sg.T("Please enter the parameters needed for Joint Detection", font=font_title)],
+        [sg.Column(l_column, expand_x=True, expand_y=False, element_justification='c')]
     ]
 
     window = sg.Window(title='Joint Detection', layout=layout, size=(1080, 720), element_justification='c',
@@ -462,8 +465,11 @@ def open_detection_window():
         if event == "-START_DETECTION-":
             print(values['-IN1-'])
             print(values['-IN2-'])
-            run_joint_detection(values['-IN1-'], values['-IN2-'])
-            window['-STATUS_UPDATE-'].update('Output is saved successfully. \nPlease move on to the next phase!')
+            try:
+                run_joint_detection(values['-IN1-'], values['-IN2-'])
+                window['-STATUS_UPDATE-'].update('Output is saved successfully. \nPlease move on to the next phase!')
+            except Exception as e:
+                window['-STATUS_UPDATE-'].update(f'Invalid input values. \nPlease select the directories again! \n {e}')
     window.close()
 
 
