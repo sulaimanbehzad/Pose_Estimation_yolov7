@@ -4,6 +4,7 @@ import os
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 import time
+import glob
 
 # link for obtaining chessboard pattern https://calib.io/pages/camera-calibration-pattern-generator
 # check if opencv is installed
@@ -12,6 +13,8 @@ print(cv2.__version__)
 # Global Variables
 IM_HEIGHT = 576
 IM_WIDTH = 1024
+
+
 # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
 
 
@@ -28,6 +31,39 @@ def SortImageNames(path):
                 ImageNames.append(os.path.join(path, name))
                 ImageNamesRaw.append(name)
     return ImageNames
+
+def get_folder_images(path):
+    images_detected = glob.glob(path+'/*.jpg')
+    left_imgs_dir = []
+    right_imgs_dir = []
+    for f in images_detected:
+        if 'CALIBRATION_R' in f:
+            right_imgs_dir.append(f)
+        if 'CALIBRATION_L' in f:
+            left_imgs_dir.append(f)
+    lengths_l = []
+    lengths_r = []
+    for n_l, n_r in zip(left_imgs_dir, right_imgs_dir):
+        lengths_l.append(len(n_l))
+        lengths_r.append(len(n_r))
+    lengths_l = sorted(list(set(lengths_l)))
+    lengths_r = sorted(list(set(lengths_r)))
+
+    left_imgs = []
+    right_imgs = []
+    for l in lengths_l:
+        for name in left_imgs_dir:
+            if len(name) == l:
+                left_imgs.append(name)
+    for r in lengths_r:
+        for name in right_imgs_dir:
+            if len(name) == r:
+                right_imgs.append(name)
+    print(f'left: \ntotal: {len(left_imgs_dir)}\n{left_imgs}')
+    print(f'right: \ntotal: {len(right_imgs_dir)}\n{right_imgs}')
+    return left_imgs, right_imgs
+
+
 
 
 def GenerateImagepoints(paths, board_size):
@@ -50,7 +86,6 @@ def GenerateImagepoints(paths, board_size):
     return imgpoints
 
 
-
 # we also can display the imagepoints on the example pictures.
 
 def DisplayImagePoints(path, imgpoints, board_size):
@@ -59,7 +94,6 @@ def DisplayImagePoints(path, imgpoints, board_size):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img = cv2.drawChessboardCorners(img, board_size, imgpoints, True)
     return img
-
 
 
 # cv2.imshow('im', example_image_left)
@@ -81,8 +115,6 @@ def PlotLocalCoordinates(img, points, board_size):
     cv2.putText(img, 'Y', (points[board_size[0] * 3, 0, 0] - 25, points[board_size[0] * 3, 0, 1] - 15),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2, cv2.LINE_AA)
     return img
-
-
 
 
 def CalibrateCamera(paths, imgpoints, objpoints):
@@ -127,9 +159,6 @@ def CalibrateCamera(paths, imgpoints, objpoints):
     return CameraParams
 
 
-
-
-
 def CalculateErrors(params, imgpoints, objpoints):
     imgp = np.array(imgpoints)
     imgp = imgp.reshape((imgp.shape[0], imgp.shape[1], imgp.shape[3]))
@@ -164,9 +193,6 @@ def CalculateErrors(params, imgpoints, objpoints):
     return rmsePerView, rmseAll
 
 
-
-
-
 def StereoCalibration(leftparams, rightparams, objpoints, imgpL, imgpR, Left_Paths):
     StereoParams = {}
 
@@ -199,18 +225,11 @@ def StereoCalibration(leftparams, rightparams, objpoints, imgpL, imgpR, Left_Pat
     StereoParams['MeanError'] = ret
     return StereoParams
 
-def run_calibration(left_camera_dir, right_camera_dir, board_size, square_size):
-    print('We have {} Images from the left camera'.format(len(os.listdir(left_camera_dir))))
-    print('and {} Images from the right camera.'.format(len(os.listdir(right_camera_dir))))
 
-    # sort the image names after their number
-    # save the image names with the whole path in a list
+def run_calibration(combined_path, board_size, square_size):
 
-    print(
-        'Before: {}, {}, {}, ...'.format(os.listdir(left_camera_dir)[0], os.listdir(left_camera_dir)[1], os.listdir(left_camera_dir)[2]))
 
-    Left_Path_Sorted = SortImageNames(left_camera_dir)
-    Right_Path_Sorted = SortImageNames(right_camera_dir)
+    Left_Path_Sorted, Right_Path_Sorted = get_folder_images(combined_path)
 
     print('After: {}, {}, {}, ...'.format(os.path.basename(Left_Path_Sorted[0]), os.path.basename(Left_Path_Sorted[1]),
                                           os.path.basename(Left_Path_Sorted[2])))
@@ -285,7 +304,8 @@ def run_calibration(left_camera_dir, right_camera_dir, board_size, square_size):
     Right_Params['Errors'] = Right_Errors
     Right_Params['MeanError'] = Right_MeanError
 
-    Stereo_Params = StereoCalibration(Left_Params, Right_Params, objpoints, Left_imgpoints, Right_imgpoints, Left_Path_Sorted)
+    Stereo_Params = StereoCalibration(Left_Params, Right_Params, objpoints, Left_imgpoints, Right_imgpoints,
+                                      Left_Path_Sorted)
 
     print('Transformation Matrix:')
     print(Stereo_Params['Transformation'])
@@ -323,13 +343,13 @@ def run_calibration(left_camera_dir, right_camera_dir, board_size, square_size):
     npz['R_Imgpoints'] = np.resize(npz.pop('R_Imgpoints'), size)
     np.savez(file, **npz)
 
+
 # stuff to run always here such as class/def
 def main():
     pass
 
 
 if __name__ == "__main__":
-
     # Current Grid 11 * 7
     # New Grid 10 * 4
     # New Grid 10 * 6
@@ -343,5 +363,7 @@ if __name__ == "__main__":
     # Images directory for loading
     LEFT_PATH = 'data/calib_imgs5/leftcamera'
     RIGHT_PATH = 'data/calib_imgs5/rightcamera'
-    run_calibration(LEFT_PATH, RIGHT_PATH, BOARD_SIZE, SQUARE_SIZE)
+    COMBINED_PATH = 'data/calib_imgs6'
+    run_calibration(COMBINED_PATH, BOARD_SIZE, SQUARE_SIZE)
+    # get_folder_images(COMBINED_PATH)
     main()
