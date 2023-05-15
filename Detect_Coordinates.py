@@ -421,8 +421,8 @@ def open_calibration_window():
                sg.Input(key="-IN1-", change_submits=True, expand_x=True), sg.FolderBrowse(key="-FB1-")],
               [sg.Text("Select the folder for chessboard pictures from second camera: ", font=font_button, size=(20, 3)),
                sg.Input(key="-IN2-", change_submits=True, expand_x=True), sg.FolderBrowse(key="-FB2-")],
-              [sg.Text("Board Size:", font=font_button, size=(20, 3)), sg.Input("Vertical", key='-IN_V-', expand_x=True), sg.Input("Horizontal", key='-IN_H-', expand_x=True)],
-              [sg.Text("Square Size (millimeter):", font=font_button, size=(20, 3)), sg.Input("", key='-IN_SQ-')],
+              [sg.Text("Board Size:", font=font_button, size=(20, 3)), sg.Input("4", key='-IN_V-', expand_x=True), sg.Input("8", key='-IN_H-', expand_x=True)],
+              [sg.Text("Square Size (millimeter):", font=font_button, size=(20, 3)), sg.Input("12", key='-IN_SQ-')],
               [sg.Button("Submit", font=font_button, size=(20, 3))]]
 
     window = sg.Window(title='Camera Calibration', layout=layout, size=(1080, 720), element_justification='c',
@@ -476,7 +476,7 @@ def open_detection_window():
 if __name__ == "__main__":
 
     font = ('Montserrat', 10)
-    font_button = ('Montserrat', 12)
+    font_button = ('Montserrat Bold', 12)
     font_title = ('Montserrat', 14)
 
     img_next = './data/Icons/Next Image.png'
@@ -522,12 +522,12 @@ if __name__ == "__main__":
     ]
     controls_column = [
         [sg.Text("Controls: ", font=font_title)], [
-            sg.Button('Previous Image', button_color=('white', '#D73CBE'), font=font_button,
-                      border_width=0, key="-PREV-", size=(10, 2))],
-        [sg.Button('Next Image', button_color=('white', '#AF3BFD'), font=font_button,
-                   border_width=0, enable_events=True, key="-NEXT-", size=(10, 2))],
-        [sg.Button('Save & Exit', button_color=('white', '#338DFC'), font=font_button,
-                   border_width=0, key='-EXIT-', size=(10, 2))],
+            sg.Button('Previous', button_color=('white', '#D73CBE'), font=font_button,
+                      border_width=0, key="-PREV-", size=(15, 1)),
+        sg.Button('Next', button_color=('white', '#AF3BFD'), font=font_button,
+                   border_width=0, enable_events=True, key="-NEXT-", size=(15, 1)),
+        sg.Button('Save & Exit', button_color=('white', '#338DFC'), font=font_button,
+                   border_width=0, key='-EXIT-', size=(15, 1))],
     ]
     labels_column = [
         [sg.Text(f'{i}. ', key=f'txt{i}', enable_events=True, size=(15, 1)),
@@ -536,8 +536,7 @@ if __name__ == "__main__":
          sg.Input(f"{i + 1} txt", key=f'input{i + 1}', size=(15, 1))] for i in range(1, 18, 2)
     ]
 
-    left_column = [[sg.Column(controls_column, background_color='#26273b')],
-                   [sg.Column(calibration_column, background_color='#26273b')]]
+    left_column = [[sg.Column(calibration_column, background_color='#26273b')]]
 
     main_column = [[sg.Graph(
         canvas_size=(IM_WIDTH, IM_HEIGHT // 2),
@@ -548,6 +547,7 @@ if __name__ == "__main__":
         enable_events=True,
         drag_submits=True
     )],
+        [sg.Column(controls_column, background_color='#26273b')],
         [sg.HSeparator()],
         [sg.Column(rig_column, background_color='#26273b', size=((IM_WIDTH / 2) - 100, IM_HEIGHT / 2)),
          sg.Column(labels_column, background_color='#26273b', size=(IM_WIDTH / 2, IM_HEIGHT / 2))]]
