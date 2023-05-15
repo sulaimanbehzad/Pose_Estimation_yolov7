@@ -620,7 +620,7 @@ if __name__ == "__main__":
             dragging = False
             prior_rect = None
         if event == '-NEXT-':
-            window["-INFO-"].update('Showing Next Image')
+            window["-INFO-"].update(f'Showing Image No. {itr_right}/{len(imgs_left)}')
             if (itr_left and itr_right) < len(imgs_left):
                 lfp, rfp = draw_image_details(imgs_left.iloc[itr_left], imgs_right.iloc[itr_right], df_left, df_right,
                                               window)
