@@ -1,3 +1,5 @@
+import glob
+
 import pandas as pd
 import torch
 from torchvision import transforms
@@ -101,11 +103,7 @@ def visualize_output(output, image):
 def multiple_pics_inference(path):
     output = []
     image = []
-    print('Before: {}, {}, {}, ...'.format(os.listdir(path)[0], os.listdir(path)[1], os.listdir(path)[2]))
-    sorted_path = SortImageNames(path)
-    print('After: {}, {}, {}, ...'.format(os.path.basename(path[0]), os.path.basename(path[1]),
-                                          os.path.basename(path[2])))
-    for p in sorted_path:
+    for p in path:
         print(f'{p}')
         out, im = run_inference(p)
         output.append(out)
@@ -286,21 +284,48 @@ def save_raw_output(imgs_path, out_path, orig_shape=None):
             df = pd.concat([df, df2])
     df.to_csv(out_path, mode='w+', index=False)
 
+    output_left_keypoints = 'data/out/keypoint_left_06.csv'
+    output_right_keypoints = 'data/out/keypoint_right_06.csv'
+def get_pose_images(path):
+    images_detected = glob.glob(path+'/*.jpg')
+    left_imgs_dir = []
+    right_imgs_dir = []
+    for f in images_detected:
+        if 'IM_R' in f:
+            right_imgs_dir.append(f)
+        if 'IM_L' in f:
+            left_imgs_dir.append(f)
+    lengths_l = []
+    lengths_r = []
+    for n_l, n_r in zip(left_imgs_dir, right_imgs_dir):
+        lengths_l.append(len(n_l))
+        lengths_r.append(len(n_r))
+    lengths_l = sorted(list(set(lengths_l)))
+    lengths_r = sorted(list(set(lengths_r)))
 
-def run_joint_detection(left_pose_dir, right_pose_dir):
+    left_imgs = []
+    right_imgs = []
+    for l in lengths_l:
+        for name in left_imgs_dir:
+            if len(name) == l:
+                left_imgs.append(name)
+    for r in lengths_r:
+        for name in right_imgs_dir:
+            if len(name) == r:
+                right_imgs.append(name)
+    print(f'left: \ntotal: {len(left_imgs_dir)}\n{left_imgs}')
+    print(f'right: \ntotal: {len(right_imgs_dir)}\n{right_imgs}')
+    return left_imgs, right_imgs
+
+def run_joint_detection(pose_dir):
     output_left_keypoints = 'data/out/keypoint_left_06.csv'
     output_right_keypoints = 'data/out/keypoint_right_06.csv'
 
-    print('We have {} Images from the left camera'.format(len(os.listdir(left_pose_dir))))
-    print('and {} Images from the right camera.'.format(len(os.listdir(right_pose_dir))))
-    print('Before: {}, {}, {}, ...'.format(os.listdir(left_pose_dir)[0], os.listdir(left_pose_dir)[1],
-                                           os.listdir(left_pose_dir)[2]))
-    left_sorted = SortImageNames(left_pose_dir)
-    right_sorted = SortImageNames(right_pose_dir)
-    print('After: {}, {}, {}, ...'.format(os.path.basename(left_sorted[0]), os.path.basename(left_sorted[1]),
-                                          os.path.basename(left_sorted[2])))
-    left_output, left_image = multiple_pics_inference(left_pose_dir)
-    right_output, right_image = multiple_pics_inference(right_pose_dir)
+    left_sorted, right_sorted = get_pose_images(pose_dir)
+    # left_sorted = SortImageNames(left_pose_dir)
+    # right_sorted = SortImageNames(right_pose_dir)
+    left_output, left_image = multiple_pics_inference(left_sorted)
+    right_output, right_image = multiple_pics_inference(right_sorted)
     # visualize_multiple_pics(left_output,left_image)
     # get_keypoints(left_output[2], left_image[2])
     visualize_output(left_output[1], left_image[1])
@@ -320,8 +345,7 @@ def main():
 
 
 if __name__ == '__main__':
-    left_imgs_path = 'data/pose_imgs/Pose6/leftcamera'
-    right_imgs_path = 'data/pose_imgs/Pose6/rightcamera'
-    run_joint_detection(left_imgs_path, right_imgs_path)
+    pose_path = 'data/pose_imgs/pose6_cobmined'
+    run_joint_detection(pose_path)
     main()
 

@@ -417,12 +417,11 @@ def combine_labels(left_prop, right_prop):
 
 def open_calibration_window():
     layout = [[sg.T("Please enter the parameters needed for Stereo Camera Calibration", font=font_title)],
-              [sg.Text("Select the folder for chessboard pictures from first camera: ", font=font_button, size=(20, 3)),
+              [sg.Text("Select the folder for chessboard pictures: ", font=font, size=(20, 3)),
                sg.Input(key="-IN1-", change_submits=True, expand_x=True), sg.FolderBrowse(key="-FB1-")],
-              [sg.Text("Select the folder for chessboard pictures from second camera: ", font=font_button, size=(20, 3)),
-               sg.Input(key="-IN2-", change_submits=True, expand_x=True), sg.FolderBrowse(key="-FB2-")],
-              [sg.Text("Board Size:", font=font_button, size=(20, 3)), sg.Input("4", key='-IN_V-', expand_x=True), sg.Input("8", key='-IN_H-', expand_x=True)],
-              [sg.Text("Square Size (millimeter):", font=font_button, size=(20, 3)), sg.Input("12", key='-IN_SQ-')],
+              [sg.Text("Board Size:", font=font, size=(20, 3)), sg.Input("4", key='-IN_V-', expand_x=True), sg.Input("8", key='-IN_H-', expand_x=True)],
+              [sg.Text("Square Size (millimeter):", font=font, size=(20, 3)), sg.Input("12", key='-IN_SQ-')],
+              [sg.Text("", font=font, text_color='Green', background_color='White', key="-STATUS_UPDATE-")],
               [sg.Button("Submit", font=font_button, size=(20, 3))]]
 
     window = sg.Window(title='Camera Calibration', layout=layout, size=(1080, 720), element_justification='c',
@@ -434,21 +433,23 @@ def open_calibration_window():
             break
         if event == "Submit":
             print(values['-IN1-'])
-            print(values['-IN2-'])
             board_size = (int(values['-IN_V-']), int(values['-IN_H-']))
-            square_size = int(values['-IN_SQ-'])
-            run_calibration(values['-IN1-'], values['-IN2-'], board_size, square_size)
+            square_size = float(values['-IN_SQ-'])
+            try:
+                run_calibration(values['-IN1-'], board_size, square_size)
+                window['-STATUS_UPDATE-'].update('Calibration has been successfully completed.\nPlease move on to the '
+                                                 'next phase!')
+            except Exception as e:
+                window['-STATUS_UPDATE-'].update(f'Invalid input values. \nPlease select the directories again! \n {e}')
     window.close()
 
 
 def open_detection_window():
     l_column = [
-        [sg.Text("Select the folder for character's pose pictures from first camera: ", font=font_button),
+        [sg.Text("Select the folder for character's pose pictures: ", font=font),
                sg.Input(key="-IN1-", change_submits=True), sg.FolderBrowse(key="-FB1-")],
-              [sg.Text("Select the folder for character's pose pictures from second camera: ", font=font_button),
-               sg.Input(key="-IN2-", change_submits=True), sg.FolderBrowse(key="-FB2-")],
               [sg.Button("Start Detection", key='-START_DETECTION-', font=font_button)],
-        [sg.Text("", font=font_button, text_color='Green', background_color='White', key="-STATUS_UPDATE-")]
+        [sg.Text("", font=font, text_color='Green', background_color='White', key="-STATUS_UPDATE-")]
                  ]
     layout = [
         [sg.T("Please enter the parameters needed for Joint Detection", font=font_title)],
@@ -464,18 +465,17 @@ def open_detection_window():
             break
         if event == "-START_DETECTION-":
             print(values['-IN1-'])
-            print(values['-IN2-'])
             try:
-                run_joint_detection(values['-IN1-'], values['-IN2-'])
+                run_joint_detection(values['-IN1-'])
                 window['-STATUS_UPDATE-'].update('Output is saved successfully. \nPlease move on to the next phase!')
             except Exception as e:
-                window['-STATUS_UPDATE-'].update(f'Invalid input values. \nPlease select the directories again! \n {e}')
+                window['-STATUS_UPDATE-'].update(f'Invalid input values. \nPlease select the directory again! \n {e}')
     window.close()
 
 
 if __name__ == "__main__":
 
-    font = ('Montserrat', 10)
+    font = ('Montserrat', 12)
     font_button = ('Montserrat Bold', 12)
     font_title = ('Montserrat', 14)
 
