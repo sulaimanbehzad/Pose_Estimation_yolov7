@@ -481,7 +481,7 @@ if __name__ == "__main__":
 
     img_next = './data/Icons/Next Image.png'
     img_prev = './data/Icons/Previous Image.png'
-    img_model_rig = './data/Icons/Model Rig.png'
+    img_model_rig = './data/Icons/model rig1.png'
     img_save = './data/Icons/save and exit.png'
 
     left_camera_points = []
@@ -511,14 +511,13 @@ if __name__ == "__main__":
     sg.set_options(font=font)
 
     rig_column = [[sg.Text(key='-INFO-', size=(60, 1), background_color='#26273b')],
-                  [sg.Image(data=resize_image(img_model_rig, 140, 200), expand_x=True, expand_y=True)]]
+                  [sg.Image(data=resize_image(img_model_rig, 210, 260), expand_x=False, expand_y=False)]]
     calibration_column = [
-        [sg.Text("Calibration \n&\n Detection", font=font_title, justification='c')],
         [sg.Button('Calibration', enable_events=True,
                    key="-CALIB-", button_color=('white', '#D73CBE'),
-                   border_width=0, size=(10, 3), font=font_button)],
+                   border_width=0, size=(10, 2), font=font_button)],
         [sg.Button('Detection', enable_events=True, key="-DETECT-", button_color=('white', '#AF3BFD'),
-                   border_width=0, size=(10, 3), font=font_button)]
+                   border_width=0, size=(10, 2), font=font_button)]
     ]
     controls_column = [
         [sg.Text("Controls: ", font=font_title)], [
@@ -536,7 +535,8 @@ if __name__ == "__main__":
          sg.Input(f"{i + 1} txt", key=f'input{i + 1}', size=(15, 1))] for i in range(1, 18, 2)
     ]
 
-    left_column = [[sg.Column(calibration_column, background_color='#26273b')]]
+    left_column = [[sg.Column(calibration_column, background_color='#26273b')],
+                   [sg.Column(rig_column, background_color='#26273b', size=(200, 300), expand_y=True)]]
 
     main_column = [[sg.Graph(
         canvas_size=(IM_WIDTH, IM_HEIGHT // 2),
@@ -549,8 +549,7 @@ if __name__ == "__main__":
     )],
         [sg.Column(controls_column, background_color='#26273b')],
         [sg.HSeparator()],
-        [sg.Column(rig_column, background_color='#26273b', size=((IM_WIDTH / 2) - 100, IM_HEIGHT / 2)),
-         sg.Column(labels_column, background_color='#26273b', size=(IM_WIDTH / 2, IM_HEIGHT / 2))]]
+        [sg.Column(labels_column, background_color='#26273b', size=(IM_WIDTH / 2, IM_HEIGHT / 2))]]
     # add_new_points_column = [
     #     [sg.Text('For left Palm')],
     #     [sg.Text('Coordinates in LEFT Pic'), sg.Multiline('1', key='l_x_1'), sg.Multiline('2', key='l_y_1')],
@@ -562,7 +561,7 @@ if __name__ == "__main__":
     #     [sg.Text('Label'), sg.Multiline('r_palm', key='new_point_label_2')],
     # ]
     layout = [
-        [sg.Column(left_column, background_color='#26273b', size=(200, IM_HEIGHT)), sg.VSeparator(),
+        [sg.Column(left_column, background_color='#26273b', size=(250, IM_HEIGHT+100)), sg.VSeparator(),
          sg.Column(main_column, background_color='#26273b'), ]
     ]
 
