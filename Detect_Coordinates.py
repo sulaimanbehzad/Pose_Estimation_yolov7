@@ -535,7 +535,7 @@ if __name__ == "__main__":
          sg.Input(f"{i + 1} txt", key=f'input{i + 1}', size=(15, 1))] for i in range(1, 18, 2)
     ]
 
-    left_column = [[sg.Column(calibration_column, background_color='#26273b')],
+    left_column = [[sg.Column(calibration_column, background_color='#26273b')], [sg.HSeparator()],
                    [sg.Column(rig_column, background_color='#26273b', size=(200, 300), expand_y=True)]]
 
     main_column = [[sg.Graph(
@@ -549,7 +549,7 @@ if __name__ == "__main__":
     )],
         [sg.Column(controls_column, background_color='#26273b')],
         [sg.HSeparator()],
-        [sg.Column(labels_column, background_color='#26273b', size=(IM_WIDTH / 2, IM_HEIGHT / 2))]]
+        [sg.Column(labels_column, background_color='#26273b', size=(IM_WIDTH, IM_HEIGHT))]]
     # add_new_points_column = [
     #     [sg.Text('For left Palm')],
     #     [sg.Text('Coordinates in LEFT Pic'), sg.Multiline('1', key='l_x_1'), sg.Multiline('2', key='l_y_1')],
