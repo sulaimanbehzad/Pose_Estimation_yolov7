@@ -3,7 +3,6 @@
 !cfg/yolov3*.cfg
 
 
-results*.csv
 
 # Datasets -------------------------------------------------------------------------------------------------------------
 coco/
@@ -152,8 +151,6 @@ ENV*/
 .LSOverride
 
 # Icon must end with two \r
-Icon
-Icon?
 
 # Thumbnails
 ._*
@@ -213,8 +210,9 @@ cmake-build-release/
 ## Plugin-specific files:
 
 # IntelliJ
-out/
 
+
+# mpeltonen/sbt-idea plugin
 # mpeltonen/sbt-idea plugin
 .idea_modules/
 
