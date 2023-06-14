@@ -1,4 +1,5 @@
 import io
+import cv2
 from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,12 +9,13 @@ from matplotlib.offsetbox import (TextArea, DrawingArea, OffsetImage, Annotation
 import PySimpleGUI as sg
 import pickle
 import codecs
+from Calibrate_Multiple_Cameras import run_calibration
+import detect_joints
 
 IM_HEIGHT = 576
 IM_WIDTH = 1024
 left_kpts = 'data/out/keypoint_left_06.csv'
 right_kpts = 'data/out/keypoint_right_06.csv'
-file = 'data/out/parameters.npz'
 # in the dataset I have stored an example parameters file
 param_path = 'data/out/parameters.npz'
 # the parameters are stored in a NPZ file
@@ -144,6 +146,7 @@ def draw_image_pair(im_left, im_right, graph):
 
     image_left.save(bio_left, format="PNG")
     image_right.save(bio_right, format="PNG")
+
     data1 = bio_left.getvalue()
     data2 = bio_right.getvalue()
     try:
@@ -153,6 +156,15 @@ def draw_image_pair(im_left, im_right, graph):
 
     except Exception as inst:
         print(inst)
+
+
+def resize_image(image_path, w, h):
+    cur_image = Image.open(image_path)
+    resized_image = cur_image.resize((w, h))
+    bio = io.BytesIO()
+    resized_image.save(bio, "PNG")
+    data = bio.getvalue()
+    return data
 
 
 def draw_image_details(im_left, im_right, df_im_left, df_right, win):
@@ -384,7 +396,7 @@ def XYZ_coords_to_csv(left_points, right_points, P1, P2, output_path):
             p3ds = np.array(p3ds)
             for p in p3ds:
                 df2 = pd.DataFrame.from_records([{'image_index': image_num, 'kpt_x': p[0], 'kpt_y': p[1],
-                                                      'kpt_z': p[2], 'label': p[3]}])
+                                                  'kpt_z': p[2], 'label': p[3]}])
                 df = pd.concat([df, df2])
         image_num += 1
     df.to_csv(output_path, mode='w+', index=False)
@@ -402,7 +414,74 @@ def combine_labels(left_prop, right_prop):
     return left_prop, right_prop
 
 
+def open_calibration_window():
+    layout = [[sg.T("Please enter the parameters needed for Stereo Camera Calibration", font=font_title)],
+              [sg.Text("Select the folder for chessboard pictures: ", font=font, size=(20, 3)),
+               sg.Input(key="-IN1-", change_submits=True, expand_x=True), sg.FolderBrowse(key="-FB1-")],
+              [sg.Text("Board Size:", font=font, size=(20, 3)), sg.Input("4", key='-IN_V-', expand_x=True), sg.Input("8", key='-IN_H-', expand_x=True)],
+              [sg.Text("Square Size (millimeter):", font=font, size=(20, 3)), sg.Input("12", key='-IN_SQ-')],
+              [sg.Text("", font=font, text_color='Green', background_color='White', key="-STATUS_UPDATE-")],
+              [sg.Button("Submit", font=font_button, size=(20, 3))]]
+
+    window = sg.Window(title='Camera Calibration', layout=layout, size=(1080, 720), element_justification='c',
+                       element_padding=5, location=(0, 0), background_color='#1b1c30', resizable=True)
+    choice = None
+    while True:
+        event, values = window.read()
+        if event == "Exit" or event == sg.WIN_CLOSED:
+            break
+        if event == "Submit":
+            print(values['-IN1-'])
+            board_size = (int(values['-IN_V-']), int(values['-IN_H-']))
+            square_size = float(values['-IN_SQ-'])
+            try:
+                run_calibration(values['-IN1-'], board_size, square_size)
+                window['-STATUS_UPDATE-'].update('Calibration has been successfully completed.\nPlease move on to the '
+                                                 'next phase!')
+            except Exception as e:
+                window['-STATUS_UPDATE-'].update(f'Invalid input values. \nPlease select the directories again! \n {e}')
+    window.close()
+
+
+def open_detection_window():
+    l_column = [
+        [sg.Text("Select the folder for character's pose pictures: ", font=font),
+               sg.Input(key="-IN1-", change_submits=True), sg.FolderBrowse(key="-FB1-")],
+              [sg.Button("Start Detection", key='-START_DETECTION-', font=font_button)],
+        [sg.Text("", font=font, text_color='Green', background_color='White', key="-STATUS_UPDATE-")]
+                 ]
+    layout = [
+        [sg.T("Please enter the parameters needed for Joint Detection", font=font_title)],
+        [sg.Column(l_column, expand_x=True, expand_y=False, element_justification='c')]
+    ]
+
+    window = sg.Window(title='Joint Detection', layout=layout, size=(1080, 720), element_justification='c',
+                       element_padding=5, location=(0, 0), background_color='#1b1c30', resizable=True)
+    choice = None
+    while True:
+        event, values = window.read()
+        if event == "Exit" or event == sg.WIN_CLOSED:
+            break
+        if event == "-START_DETECTION-":
+            print(values['-IN1-'])
+            try:
+                detect_joints.run_joint_detection(values['-IN1-'])
+                window['-STATUS_UPDATE-'].update('Output is saved successfully. \nPlease move on to the next phase!')
+            except Exception as e:
+                window['-STATUS_UPDATE-'].update(f'Invalid input values. \nPlease select the directory again! \n {e}')
+    window.close()
+
+
 if __name__ == "__main__":
+
+    font = ('Montserrat', 12)
+    font_button = ('Montserrat Bold', 12)
+    font_title = ('Montserrat', 14)
+
+    img_next = './data/Icons/Next Image.png'
+    img_prev = './data/Icons/Previous Image.png'
+    img_model_rig = './data/Icons/model rig1.png'
+    img_save = './data/Icons/save and exit.png'
 
     left_camera_points = []
     right_camera_points = []
@@ -427,50 +506,71 @@ if __name__ == "__main__":
     imgs_left = df_left.loc[:, 'image'].drop_duplicates()
     imgs_right = df_right.loc[:, 'image'].drop_duplicates()
 
-    sg.theme('Dark Blue 3')
+    sg.theme('Dark Blue 2')
+    sg.set_options(font=font)
+
+    rig_column = [[sg.Text(key='-INFO-', size=(60, 1), background_color='#26273b')],
+                  [sg.Image(data=resize_image(img_model_rig, 210, 260), expand_x=False, expand_y=False)]]
+    calibration_column = [
+        [sg.Button('Calibration', enable_events=True,
+                   key="-CALIB-", button_color=('white', '#D73CBE'),
+                   border_width=0, size=(10, 2), font=font_button)],
+        [sg.Button('Detection', enable_events=True, key="-DETECT-", button_color=('white', '#AF3BFD'),
+                   border_width=0, size=(10, 2), font=font_button)]
+    ]
     controls_column = [
-        [sg.Text("Controls: ")], [sg.Button('Next Image', enable_events=True, key="-SHOW-"),
-                                  sg.Button('Exit', key='-EXIT-'),
-                                  sg.R('Move Stuff', 1, key='-MOVE-', enable_events=True),
-                                  sg.Button('Update Labels', enable_events=True, key='-UPDATE-')]
+        [sg.Text("Controls: ", font=font_title)], [
+            sg.Button('Previous', button_color=('white', '#D73CBE'), font=font_button,
+                      border_width=0, key="-PREV-", size=(15, 1)),
+        sg.Button('Next', button_color=('white', '#AF3BFD'), font=font_button,
+                   border_width=0, enable_events=True, key="-NEXT-", size=(15, 1)),
+        sg.Button('Save & Exit', button_color=('white', '#338DFC'), font=font_button,
+                   border_width=0, key='-EXIT-', size=(15, 1))],
     ]
     labels_column = [
-        [sg.Text(f'{i}. ', key=f'txt{i}', size=(15, 1)), sg.Multiline(f"{i} txt", key=f'input{i}', size=(20, 1)),
-         sg.Text(f'{i + 1}. ', key=f'txt{i + 1}', size=(15, 1)),
-         sg.Multiline(f"{i + 1} txt", key=f'input{i + 1}', size=(20, 1))] for i in range(1, 18, 2)]
-    add_new_points_column = [
-        [sg.Text('For left Palm')],
-        [sg.Text('Coordinates in LEFT Pic'), sg.Multiline('1', key='l_x_1'), sg.Multiline('2', key='l_y_1')],
-        [sg.Text('Coordinates in RIGHT Pic'), sg.Multiline('3', key='r_x_1'), sg.Multiline('4', key='r_y_1')],
-        [sg.Text('Label'), sg.Multiline('l_palm', key='new_point_label_1')],
-        [sg.Text('For right Palm')],
-        [sg.Text('Coordinates in LEFT Pic'), sg.Multiline('5', key='l_x_2'), sg.Multiline('6', key='l_y_2')],
-        [sg.Text('Coordinates in RIGHT Pic'), sg.Multiline('7', key='r_x_2'), sg.Multiline('8', key='r_y_2')],
-        [sg.Text('Label'), sg.Multiline('r_palm', key='new_point_label_2')],
+        [sg.Text(f'{i}. ', key=f'txt{i}', enable_events=True, size=(15, 1)),
+         sg.Input(f"{i} txt", key=f'input{i}', size=(15, 1)),
+         sg.Text(f'{i + 1}. ', key=f'txt{i + 1}', enable_events=True, size=(15, 1)),
+         sg.Input(f"{i + 1} txt", key=f'input{i + 1}', size=(15, 1))] for i in range(1, 18, 2)
     ]
+
+    left_column = [[sg.Column(calibration_column, background_color='#26273b')], [sg.HSeparator()],
+                   [sg.Column(rig_column, background_color='#26273b', size=(200, 300), expand_y=True)]]
+
+    main_column = [[sg.Graph(
+        canvas_size=(IM_WIDTH, IM_HEIGHT // 2),
+        graph_bottom_left=(0, IM_HEIGHT),
+        graph_top_right=(IM_WIDTH, 0),
+        key="-GRAPH-",
+        background_color='#26273b',
+        enable_events=True,
+        drag_submits=True
+    )],
+        [sg.Column(controls_column, background_color='#26273b')],
+        [sg.HSeparator()],
+        [sg.Column(labels_column, background_color='#26273b', size=(IM_WIDTH, IM_HEIGHT))]]
+    # add_new_points_column = [
+    #     [sg.Text('For left Palm')],
+    #     [sg.Text('Coordinates in LEFT Pic'), sg.Multiline('1', key='l_x_1'), sg.Multiline('2', key='l_y_1')],
+    #     [sg.Text('Coordinates in RIGHT Pic'), sg.Multiline('3', key='r_x_1'), sg.Multiline('4', key='r_y_1')],
+    #     [sg.Text('Label'), sg.Multiline('l_palm', key='new_point_label_1')],
+    #     [sg.Text('For right Palm')],
+    #     [sg.Text('Coordinates in LEFT Pic'), sg.Multiline('5', key='l_x_2'), sg.Multiline('6', key='l_y_2')],
+    #     [sg.Text('Coordinates in RIGHT Pic'), sg.Multiline('7', key='r_x_2'), sg.Multiline('8', key='r_y_2')],
+    #     [sg.Text('Label'), sg.Multiline('r_palm', key='new_point_label_2')],
+    # ]
     layout = [
-        [sg.Text(key='-INFO-', size=(60, 1))],
-        [sg.Graph(
-            canvas_size=(IM_WIDTH, IM_HEIGHT // 2),
-            graph_bottom_left=(0, IM_HEIGHT),
-            graph_top_right=(IM_WIDTH, 0),
-            key="-GRAPH-",
-            background_color='lightblue',
-            enable_events=True,
-            drag_submits=True
-        )],
-        [sg.Column(labels_column), sg.Column(add_new_points_column)],
-        [sg.Column(controls_column)],
-
+        [sg.Column(left_column, background_color='#26273b', size=(250, IM_HEIGHT+100)), sg.VSeparator(),
+         sg.Column(main_column, background_color='#26273b'), ]
     ]
 
-    window = sg.Window(title='Keypoint Editor', layout=layout, size=(1080, 720),
-                       element_padding=5, location=(0, 0))
+    window = sg.Window(title='Keypoint Editor', layout=layout, size=(1080, 720), element_justification='c',
+                       element_padding=5, location=(0, 0), background_color='#1b1c30', resizable=True, font=font)
 
     itr_left = 0
     itr_right = 0
     window.finalize()
-    window.maximize()
+    # window.maximize()
     graph = window['-GRAPH-']
     dragging = False
     start_point = end_point = prior_rect = None
@@ -481,11 +581,14 @@ if __name__ == "__main__":
         if event == "-EXIT-" or event == sg.WIN_CLOSED:
             break
 
-        if event in ('-MOVE-', '-MOVEALL-'):
-            graph.set_cursor(cursor='fleur')  # not yet released method... coming soon!
-        elif not event.startswith('-GRAPH-'):
-            graph.set_cursor(cursor='left_ptr')  # not yet released method... coming soon!
-
+        # if event in ('-MOVE-', '-MOVEALL-'):
+        #     graph.set_cursor(cursor='fleur')  # not yet released method... coming soon!
+        # elif not event.startswith('-GRAPH-'):
+        #     graph.set_cursor(cursor='left_ptr')  # not yet released method... coming soon!
+        if event == "-CALIB-":
+            open_calibration_window()
+        if event == "-DETECT-":
+            open_detection_window()
         if event == "-GRAPH-":  # if there's a "Graph" event, then it's a mouse
             x, y = values["-GRAPH-"]
             if not dragging:
@@ -503,19 +606,19 @@ if __name__ == "__main__":
                 graph.delete_figure(prior_rect)
             delta_x, delta_y = x - lastxy[0], y - lastxy[1]
             lastxy = x, y
-            if None not in (start_point, end_point):
-                if values['-MOVE-']:
-                    for fig in drag_figures:
-                        graph.move_figure(fig, delta_x, delta_y)
-                        graph.update()
+            # if None not in (start_point, end_point):
+            #     if values['-MOVE-']:
+            #         for fig in drag_figures:
+            #             graph.move_figure(fig, delta_x, delta_y)
+            #             graph.update()
             window["-INFO-"].update(value=f"mouse {values['-GRAPH-']}")
         elif event.endswith('+UP'):  # The drawing has ended because mouse up
             window["-INFO-"].update(value=f"grabbed rectangle from {start_point} to {end_point}")
             start_point, end_point = None, None  # enable grabbing a new rect
             dragging = False
             prior_rect = None
-        if event == '-SHOW-':
-            print('clicked Next Image')
+        if event == '-NEXT-':
+            window["-INFO-"].update(f'Showing Image No. {itr_right}/{len(imgs_left)}')
             if (itr_left and itr_right) < len(imgs_left):
                 lfp, rfp = draw_image_details(imgs_left.iloc[itr_left], imgs_right.iloc[itr_right], df_left, df_right,
                                               window)
@@ -541,6 +644,17 @@ if __name__ == "__main__":
                 right_camera_points.append(rfp)
                 itr_left += 1
                 itr_right += 1
+        if event == '-PREV-':
+            window["-INFO-"].update('Showing Previous Image')
+            if (itr_left and itr_right) >= 1:
+                lfp, rfp = draw_image_details(imgs_left.iloc[itr_left], imgs_right.iloc[itr_right], df_left, df_right,
+                                              window)
+                itr_left -= 1
+                itr_right -= 1
+        for text_idx in range(1, 18):
+            if event == 'txt' + str(text_idx):
+                window["-INFO-"].update('txt' + str(text_idx))
+                # print(f'VALUES {values["txt2"]}')
     # print(f'size lfps: {len(left_camera_points)}')
     print(f'shape left point {len(left_camera_points)} \n right point {len(right_camera_points)}')
     XYZ_coords_to_csv(left_camera_points, right_camera_points, projection_matrix_1, projection_matrix_2,

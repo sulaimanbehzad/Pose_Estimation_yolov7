@@ -1,3 +1,5 @@
+import glob
+
 import pandas as pd
 import torch
 from torchvision import transforms
@@ -41,7 +43,7 @@ def free_gpu_cache():
 
 
 def load_model():
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = torch.load('yolov7-w6-pose.pt', map_location=device)['model']
     # Put in inference mode
     model.float().eval()
@@ -101,11 +103,7 @@ def visualize_output(output, image):
 def multiple_pics_inference(path):
     output = []
     image = []
-    print('Before: {}, {}, {}, ...'.format(os.listdir(path)[0], os.listdir(path)[1], os.listdir(path)[2]))
-    sorted_path = SortImageNames(path)
-    print('After: {}, {}, {}, ...'.format(os.path.basename(path[0]), os.path.basename(path[1]),
-                                          os.path.basename(path[2])))
-    for p in sorted_path:
+    for p in path:
         print(f'{p}')
         out, im = run_inference(p)
         output.append(out)
@@ -280,37 +278,74 @@ def save_raw_output(imgs_path, out_path, orig_shape=None):
             kpts = output[idx, 7:].T
             pickled = codecs.encode(pickle.dumps(kpts), "base64").decode()
             print(f'kpts {pickled}')
-            print(f'len output: {len(output)} \n type output: {type(output)} \n output: {output} \n type kpts: {type(pickled)}')
+            print(
+                f'len output: {len(output)} \n type output: {type(output)} \n output: {output} \n type kpts: {type(pickled)}')
             df2 = pd.DataFrame.from_records([{'image': img_p, 'output': pickled}])
             df = pd.concat([df, df2])
     df.to_csv(out_path, mode='w+', index=False)
 
+    output_left_keypoints = 'data/out/keypoint_left_06.csv'
+    output_right_keypoints = 'data/out/keypoint_right_06.csv'
+def get_pose_images(path):
+    images_detected = glob.glob(path+'/*.jpg')
+    left_imgs_dir = []
+    right_imgs_dir = []
+    for f in images_detected:
+        if 'IM_R' in f:
+            right_imgs_dir.append(f)
+        if 'IM_L' in f:
+            left_imgs_dir.append(f)
+    lengths_l = []
+    lengths_r = []
+    for n_l, n_r in zip(left_imgs_dir, right_imgs_dir):
+        lengths_l.append(len(n_l))
+        lengths_r.append(len(n_r))
+    lengths_l = sorted(list(set(lengths_l)))
+    lengths_r = sorted(list(set(lengths_r)))
 
-left_imgs_path = 'data/pose_imgs/Pose6/leftcamera'
-right_imgs_path = 'data/pose_imgs/Pose6/rightcamera'
-output_left_keypoints = 'data/out/keypoint_left_06.csv'
-output_right_keypoints = 'data/out/keypoint_right_06.csv'
+    left_imgs = []
+    right_imgs = []
+    for l in lengths_l:
+        for name in left_imgs_dir:
+            if len(name) == l:
+                left_imgs.append(name)
+    for r in lengths_r:
+        for name in right_imgs_dir:
+            if len(name) == r:
+                right_imgs.append(name)
+    print(f'left: \ntotal: {len(left_imgs_dir)}\n{left_imgs}')
+    print(f'right: \ntotal: {len(right_imgs_dir)}\n{right_imgs}')
+    return left_imgs, right_imgs
 
-print('We have {} Images from the left camera'.format(len(os.listdir(left_imgs_path))))
-print('and {} Images from the right camera.'.format(len(os.listdir(right_imgs_path))))
-print('Before: {}, {}, {}, ...'.format(os.listdir(left_imgs_path)[0], os.listdir(left_imgs_path)[1],
-                                       os.listdir(left_imgs_path)[2]))
-left_sorted = SortImageNames(left_imgs_path)
-right_sorted = SortImageNames(right_imgs_path)
-print('After: {}, {}, {}, ...'.format(os.path.basename(left_sorted[0]), os.path.basename(left_sorted[1]),
-                                      os.path.basename(left_sorted[2])))
-left_output, left_image = multiple_pics_inference(left_imgs_path)
-right_output, right_image = multiple_pics_inference(right_imgs_path)
-# visualize_multiple_pics(left_output,left_image)
-# get_keypoints(left_output[2], left_image[2])
-visualize_output(left_output[1], left_image[1])
-save_raw_output(left_sorted, out_path=output_left_keypoints)
-save_raw_output(right_sorted, out_path=output_right_keypoints)
-print(f'GPU: {torch.cuda.is_available()}')
-print(f'GPU: {torch.cuda.device_count()}')
-print(f'GPU: {torch.cuda.current_device()}')
-print(f'GPU: {torch.cuda.get_device_name(0)}')
+def run_joint_detection(pose_dir):
+    output_left_keypoints = 'data/out/keypoint_left_06.csv'
+    output_right_keypoints = 'data/out/keypoint_right_06.csv'
 
-# imgs_path = 'images/IM_L_11.jpg'
-# output, image = run_inference(imgs_path) # Bryan Reyes on Unsplash
-# visualize_output(output, image)
+    left_sorted, right_sorted = get_pose_images(pose_dir)
+    # left_sorted = SortImageNames(left_pose_dir)
+    # right_sorted = SortImageNames(right_pose_dir)
+    left_output, left_image = multiple_pics_inference(left_sorted)
+    right_output, right_image = multiple_pics_inference(right_sorted)
+    # visualize_multiple_pics(left_output,left_image)
+    # get_keypoints(left_output[2], left_image[2])
+    # visualize_output(left_output[1], left_image[1])
+    save_raw_output(left_sorted, out_path=output_left_keypoints)
+    save_raw_output(right_sorted, out_path=output_right_keypoints)
+    print(f'GPU: {torch.cuda.is_available()}')
+    print(f'GPU: {torch.cuda.device_count()}')
+    print(f'GPU: {torch.cuda.current_device()}')
+    print(f'GPU: {torch.cuda.get_device_name(0)}')
+
+    # imgs_path = 'images/IM_L_11.jpg'
+    # output, image = run_inference(imgs_path) # Bryan Reyes on Unsplash
+    # visualize_output(output, image)
+
+def main():
+    pass
+
+
+if __name__ == '__main__':
+    pose_path = 'data/pose_imgs/pose6_combined'
+    run_joint_detection(pose_path)
+    main()
+
