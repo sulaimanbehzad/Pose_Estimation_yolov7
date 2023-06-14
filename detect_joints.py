@@ -43,7 +43,7 @@ def free_gpu_cache():
 
 
 def load_model():
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = torch.load('yolov7-w6-pose.pt', map_location=device)['model']
     # Put in inference mode
     model.float().eval()
@@ -328,7 +328,7 @@ def run_joint_detection(pose_dir):
     right_output, right_image = multiple_pics_inference(right_sorted)
     # visualize_multiple_pics(left_output,left_image)
     # get_keypoints(left_output[2], left_image[2])
-    visualize_output(left_output[1], left_image[1])
+    # visualize_output(left_output[1], left_image[1])
     save_raw_output(left_sorted, out_path=output_left_keypoints)
     save_raw_output(right_sorted, out_path=output_right_keypoints)
     print(f'GPU: {torch.cuda.is_available()}')
@@ -345,7 +345,7 @@ def main():
 
 
 if __name__ == '__main__':
-    pose_path = 'data/pose_imgs/pose6_cobmined'
+    pose_path = 'data/pose_imgs/pose6_combined'
     run_joint_detection(pose_path)
     main()
 

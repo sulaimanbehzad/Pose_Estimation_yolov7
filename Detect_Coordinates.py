@@ -1,5 +1,4 @@
 import io
-
 import cv2
 from PIL import Image
 import numpy as np
@@ -11,7 +10,7 @@ import PySimpleGUI as sg
 import pickle
 import codecs
 from Calibrate_Multiple_Cameras import run_calibration
-from detect_joints import run_joint_detection
+import detect_joints
 
 IM_HEIGHT = 576
 IM_WIDTH = 1024
@@ -466,7 +465,7 @@ def open_detection_window():
         if event == "-START_DETECTION-":
             print(values['-IN1-'])
             try:
-                run_joint_detection(values['-IN1-'])
+                detect_joints.run_joint_detection(values['-IN1-'])
                 window['-STATUS_UPDATE-'].update('Output is saved successfully. \nPlease move on to the next phase!')
             except Exception as e:
                 window['-STATUS_UPDATE-'].update(f'Invalid input values. \nPlease select the directory again! \n {e}')
