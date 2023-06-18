@@ -361,8 +361,8 @@ if __name__ == "__main__":
     SQUARE_SIZE = 12.5
 
     # Images directory for loading
-    LEFT_PATH = 'data/calib_imgs5/leftcamera'
-    RIGHT_PATH = 'data/calib_imgs5/rightcamera'
+    # LEFT_PATH = 'data/calib_imgs5/leftcamera'
+    # RIGHT_PATH = 'data/calib_imgs5/rightcamera'
     COMBINED_PATH = 'data/calib_imgs6'
     run_calibration(COMBINED_PATH, BOARD_SIZE, SQUARE_SIZE)
     # get_folder_images(COMBINED_PATH)
