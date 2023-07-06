@@ -225,7 +225,7 @@ def StereoCalibration(leftparams, rightparams, objpoints, imgpL, imgpR, Left_Pat
     StereoParams['MeanError'] = ret
     return StereoParams
 
-
+# TODO: Comment out all the lines where an image is shown
 def run_calibration(combined_path, board_size, square_size):
 
 
@@ -252,28 +252,28 @@ def run_calibration(combined_path, board_size, square_size):
     print(f'Detected left: {len(Left_imgpoints)}')
     print(f'Detected right: {len(Left_imgpoints)}')
 
-    example_image_left = DisplayImagePoints(Left_Path_Sorted[0], Left_imgpoints[0], board_size)
-    example_image_right = DisplayImagePoints(Right_Path_Sorted[0], Right_imgpoints[0], board_size)
+    # example_image_left = DisplayImagePoints(Left_Path_Sorted[0], Left_imgpoints[0], board_size)
+    # example_image_right = DisplayImagePoints(Right_Path_Sorted[0], Right_imgpoints[0], board_size)
     fig = plt.figure(figsize=(20, 20))
     grid = ImageGrid(fig, 111, nrows_ncols=(1, 2), axes_pad=0.1)
 
-    for ax, im in zip(grid, [example_image_left, example_image_right]):
-        ax.imshow(im)
-        ax.axis('off')
+    # for ax, im in zip(grid, [example_image_left, example_image_right]):
+    #     ax.imshow(im)
+    #     ax.axis('off')
 
     n = 2
-    img = cv2.imread(Left_Path_Sorted[n])
-    img = cv2.resize(img, (IM_WIDTH, IM_HEIGHT))
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    # cv2.imshow('ex', img)
-    # img = PlotLocalCoordinates(img, Left_imgpoints[n])
-
-    fig = plt.figure(figsize=(10, 10))
-    plt.imshow(img)
-    plt.axis('off')
-    plt.show(block=False)
-    plt.pause(30)
-    plt.close()
+    # img = cv2.imread(Left_Path_Sorted[n])
+    # img = cv2.resize(img, (IM_WIDTH, IM_HEIGHT))
+    # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    # # cv2.imshow('ex', img)
+    # # img = PlotLocalCoordinates(img, Left_imgpoints[n])
+    #
+    # fig = plt.figure(figsize=(10, 10))
+    # plt.imshow(img)
+    # plt.axis('off')
+    # plt.show(block=False)
+    # plt.pause(30)
+    # plt.close()
 
     # Camera Calibration
     Start_Time_Cal = time.perf_counter()
